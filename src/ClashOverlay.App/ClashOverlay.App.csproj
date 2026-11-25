@@ -19,6 +19,8 @@
   <ItemGroup>
     <Using Remove="System.Windows.Forms" />
     <Using Remove="System.Drawing" />
+    <Using Include="System.Net.Http" />
+    <Using Include="System.IO" />
   </ItemGroup>
 
   <ItemGroup>
@@ -36,6 +38,13 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="ClashOverlay.Tests" />
+  </ItemGroup>
+
+  <!-- Demo mode: the anonymised test fixtures, compiled in. -->
+  <ItemGroup>
+    <EmbeddedResource Include="..\..\tests\fixtures\exports\demo_th19.json" LogicalName="Demo.demo_th19.json" Link="Demo\demo_th19.json" />
+    <EmbeddedResource Include="..\..\tests\fixtures\exports\rushed_th13.json" LogicalName="Demo.rushed_th13.json" Link="Demo\rushed_th13.json" />
+    <EmbeddedResource Include="..\..\tests\fixtures\api\demo_*.json" LogicalName="Demo.%(Filename)%(Extension)" Link="Demo\%(Filename)%(Extension)" />
   </ItemGroup>
 
   <!-- Bundled Inter font (OFL) and the app icon, compiled in as WPF resources. -->
