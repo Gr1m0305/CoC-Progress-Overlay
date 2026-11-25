@@ -7,6 +7,9 @@ public enum LevelSource
     None,
     Export,
     Api,
+
+    /// <summary>Set by hand in the overlay ("+1") since the last export or API sync.</summary>
+    Manual,
 }
 
 /// <summary>One building, trap or wall the player has.</summary>
@@ -21,6 +24,9 @@ public sealed class StructureInstance
 
     public bool GearedUp { get; init; }
 
+    /// <summary>Raised by a manual level edit.</summary>
+    public bool Edited { get; init; }
+
     public bool IsUpgrading => TimerLeft is > 0;
 }
 
@@ -34,6 +40,9 @@ public sealed class UnitState
     public long? TimerLeft { get; init; }
 
     public LevelSource Source { get; init; }
+
+    /// <summary>The level the API reported, when it reports this unit at all.</summary>
+    public int? ApiLevel { get; init; }
 
     public bool IsUpgrading => TimerLeft is > 0;
 }

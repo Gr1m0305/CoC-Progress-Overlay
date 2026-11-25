@@ -39,6 +39,9 @@ public sealed class AppPaths
 
     public string ExportFile(string tag) => Path.Combine(AccountDir(tag), "export.json");
 
+    /// <summary>Levels the player raised by hand since the last export.</summary>
+    public string EditsFile(string tag) => Path.Combine(AccountDir(tag), "edits.json");
+
     private static string DefaultRoot()
     {
         var overrideRoot = Environment.GetEnvironmentVariable("CLASHOVERLAY_HOME");

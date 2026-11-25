@@ -119,13 +119,18 @@ public static class VillageStateBuilder
 
                 if (!units.TryGetValue(item.Id, out var current))
                 {
-                    units[item.Id] = new UnitState { Item = item, Level = u.Level, Source = LevelSource.Api };
+                    units[item.Id] = new UnitState { Item = item, Level = u.Level, Source = LevelSource.Api, ApiLevel = u.Level };
                     continue;
                 }
 
                 if (!apiIsNewer || u.Level == current.Level)
                 {
-                    continue; // the export is newer, or they agree (keep the export's running timer)
+                    // The export is newer, or they agree (keep the export's running timer).
+                    units[item.Id] = new UnitState
+                    {
+                        Item = current.Item, Level = current.Level, TimerLeft = current.TimerLeft, Source = current.Source, ApiLevel = u.Level,
+                    };
+                    continue;
                 }
 
                 // The API is newer and disagrees. Keep a running timer only when the API still shows the level the
@@ -133,13 +138,11 @@ public static class VillageStateBuilder
                 var started = exportLevels.GetValueOrDefault(item.Id, -1);
                 var keepTimer = u.Level == started && current.TimerLeft is null && export?.Entries.Any(x => x.Id == item.Id && x.IsUpgrading) == true;
                 long? timer = keepTimer ? 60 : null;
-                units[item.Id] = new UnitState { Item = item, Level = u.Level, TimerLeft = timer, Source = LevelSource.Api };
+                units[item.Id] = new UnitState { Item = item, Level = u.Level, TimerLeft = timer, Source = LevelSource.Api, ApiLevel = u.Level };
             }
         }
 
-        var builders = village == Village.Home
-            ? structures.Count(s => s.Item.Id == GameData.BuildersHutId) + structures.Count(s => s.Item.Id == GameData.BobsHutId && s.Level > 0)
-            : structures.Count == 0 ? 0 : 1 + (structures.Any(s => s.Item.Id == GameData.OttosOutpostId && s.Level > 0) ? 1 : 0);
+        var builders = CountBuilders(village, structures);
 
         return new VillageState
         {
@@ -154,6 +157,11 @@ public static class VillageStateBuilder
             Builders = builders,
         };
     }
+
+    /// <summary>Home: Builder's Huts plus a built B.O.B's Hut. Builder Base: the Master Builder plus O.T.T.O once his outpost is built.</summary>
+    internal static int CountBuilders(Village village, IReadOnlyList<StructureInstance> structures) => village == Village.Home
+        ? structures.Count(s => s.Item.Id == GameData.BuildersHutId) + structures.Count(s => s.Item.Id == GameData.BobsHutId && s.Level > 0)
+        : structures.Count == 0 ? 0 : 1 + (structures.Any(s => s.Item.Id == GameData.OttosOutpostId && s.Level > 0) ? 1 : 0);
 
     /// <summary>A running upgrade's level and time left after <paramref name="elapsed"/> seconds.</summary>
     internal static (int Level, long? Left) Advance(int level, long? timer, long elapsed)
