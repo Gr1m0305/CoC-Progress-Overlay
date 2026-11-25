@@ -79,6 +79,7 @@ internal sealed partial class SettingsViewModel : ObservableObject, IDisposable
             detector.Changed += OnDetectorChanged;
         }
 
+        _appUpdateStatus = AppUpdateSummary();
         _ = FindIpAsync();
     }
 
@@ -806,6 +807,44 @@ internal sealed partial class SettingsViewModel : ObservableObject, IDisposable
         {
             S.CheckForUpdates = value;
             Changed(nameof(CheckForUpdates));
+        }
+    }
+
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(CheckAppUpdateCommand))]
+    private bool _isCheckingApp;
+
+    [ObservableProperty]
+    private string? _appUpdateStatus;
+
+    /// <summary>The release page of a newer version, when one is known.</summary>
+    public string? AppUpdateUrl => _host.Updates.Available?.Url;
+
+    private string? AppUpdateSummary()
+    {
+        if (_host.Updates.Available is { } r)
+        {
+            return $"Clash Tracker {r.VersionText} is out. You have {_host.Version}.";
+        }
+
+        return S.LastUpdateCheck is { } at ? $"Last checked {Fmt.Ago(_host.Time.GetUtcNow() - at)}." : null;
+    }
+
+    private bool CanCheckApp() => !IsCheckingApp && _host.Updates.CanCheck;
+
+    [RelayCommand(CanExecute = nameof(CanCheckApp))]
+    private async Task CheckAppUpdate()
+    {
+        IsCheckingApp = true;
+        AppUpdateStatus = "Checking…";
+        try
+        {
+            AppUpdateStatus = await _host.Updates.CheckNowAsync();
+        }
+        finally
+        {
+            IsCheckingApp = false;
+            OnPropertyChanged(nameof(AppUpdateUrl));
         }
     }
 

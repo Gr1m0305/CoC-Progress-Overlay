@@ -17,9 +17,14 @@ public partial class App : Application
     private const string DemoMutexName = @"Local\ClashOverlay.Demo";
     private const string ActivateEventName = @"Local\ClashOverlay.Activate";
 
+    /// <summary>The installer sets this to close every running copy (the app and a demo) before it replaces the exe.</summary>
+    public const string ExitEventName = @"Local\ClashOverlay.Exit";
+
     private Mutex? _mutex;
     private EventWaitHandle? _activate;
     private RegisteredWaitHandle? _activateWait;
+    private EventWaitHandle? _exitSignal;
+    private RegisteredWaitHandle? _exitWait;
     private AppHost? _host;
     private GameDetector? _detector;
     private HotkeyManager? _hotkeys;
@@ -56,6 +61,13 @@ public partial class App : Application
         }
 
         _host = new AppHost(options);
+        _exitSignal = new EventWaitHandle(false, EventResetMode.ManualReset, ExitEventName);
+        _exitSignal.Reset();
+        _exitWait = ThreadPool.RegisterWaitForSingleObject(_exitSignal, (_, _) => Dispatcher.BeginInvoke(() =>
+        {
+            _host.Log.LogInformation("Closing: asked to by the installer");
+            Shutdown();
+        }), null, Timeout.Infinite, true);
         DispatcherUnhandledException += OnUnhandled;
         AppDomain.CurrentDomain.UnhandledException += (_, args) => _host.Log.LogCritical(args.ExceptionObject as Exception, "Unhandled exception");
         TaskScheduler.UnobservedTaskException += (_, args) =>
@@ -102,7 +114,15 @@ public partial class App : Application
         }
 
         _keys = new KeyWatcher(_host, (title, text, click, warning) => _tray.Notify(title, text, click, warning), () => OpenSetup(1));
-        if (!_host.Settings.SetupCompleted)
+        _host.Updates.AvailableChanged += (_, _) => ShowUpdateInTray();
+        _host.Updates.NewVersionFound += (_, release) => _tray.Notify(
+            $"Clash Tracker {release.VersionText} is out",
+            $"You have {_host.Version}. Click here to open the download page.",
+            () => Shell.Open(release.Url));
+        ShowUpdateInTray();
+        _host.Updates.Start();
+
+        if (!_host.Settings.SetupCompleted || !_host.Keys.HasKey)
         {
             if (options.FromStartup)
             {
@@ -124,6 +144,14 @@ public partial class App : Application
         }
 
         _ = UpdateContentAtStart();
+    }
+
+    private void ShowUpdateInTray()
+    {
+        var release = _host!.Updates.Available;
+        _tray?.ShowUpdate(
+            release is null ? null : $"Update available: {release.VersionText}",
+            release is null ? null : () => Shell.Open(release.Url));
     }
 
     private TrayActions TrayActions() => new()
@@ -347,6 +375,8 @@ public partial class App : Application
     {
         _activateWait?.Unregister(null);
         _activate?.Dispose();
+        _exitWait?.Unregister(null);
+        _exitSignal?.Dispose();
         _overlay?.Dispose();
         _hotkeys?.Dispose();
         _detector?.Dispose();

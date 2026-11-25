@@ -1,0 +1,161 @@
+# Builds and publishes a release when a version tag (vX.Y.Z) is pushed:
+#   ClashOverlay-Setup-X.Y.Z.exe, ClashOverlay-X.Y.Z-portable.zip and SHA256SUMS.txt,
+# with the release notes taken from the matching "## [X.Y.Z]" section of CHANGELOG.md.
+#
+# Signing is optional: with the repository secrets SIGN_CERT_PFX_BASE64 (the .pfx file, base64) and
+# SIGN_CERT_PASSWORD, the exe, the installer and its uninstaller are signed with signtool. Without them the
+# release is unsigned.
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    env:
+      DOTNET_NOLOGO: 'true'
+      DOTNET_CLI_TELEMETRY_OPTOUT: 'true'
+      TAG: ${{ github.ref_name }}
+      HAS_SIGNING: ${{ secrets.SIGN_CERT_PFX_BASE64 != '' && secrets.SIGN_CERT_PASSWORD != '' }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          # The 8.0 runtime runs the tests; the newest SDK builds everything.
+          dotnet-version: |
+            8.0.x
+            10.0.x
+
+      - name: Read the version from the tag
+        shell: pwsh
+        run: |
+          if ($env:TAG -notmatch '^v(\d+\.\d+\.\d+)$') { throw "The tag '$env:TAG' is not vX.Y.Z." }
+          "VERSION=$($Matches[1])" >> $env:GITHUB_ENV
+
+      - name: Take the release notes from CHANGELOG.md
+        shell: pwsh
+        run: |
+          $text = Get-Content CHANGELOG.md -Raw
+          $pattern = '(?ms)^## \[?' + [regex]::Escape($env:VERSION) + '(?=[\]\s])[^\n]*\n(.*?)(?=^## |\z)'
+          $m = [regex]::Match($text, $pattern)
+          if (-not $m.Success -or [string]::IsNullOrWhiteSpace($m.Groups[1].Value)) {
+            throw "CHANGELOG.md has no section for $env:VERSION. Add '## [$env:VERSION] - date' with the changes, then tag again."
+          }
+          $m.Groups[1].Value.Trim() | Set-Content -Path "$env:RUNNER_TEMP\notes.md" -Encoding utf8
+          Get-Content "$env:RUNNER_TEMP\notes.md"
+
+      - name: Restore
+        run: dotnet restore ClashOverlay.sln
+
+      - name: Test
+        run: dotnet test ClashOverlay.sln -c Release --no-restore -p:ClashVersion=${{ env.VERSION }}
+
+      - name: Publish the single-file build
+        run: dotnet publish src/ClashOverlay.App/ClashOverlay.App.csproj -c Release -p:PublishProfile=win-x64 -p:ClashVersion=${{ env.VERSION }}
+
+      - name: Check the published build
+        shell: pwsh
+        run: |
+          $exe = Get-Item publish/ClashOverlay.exe
+          $product = $exe.VersionInfo.ProductVersion
+          if ($product -ne $env:VERSION) { throw "ClashOverlay.exe says version '$product', expected '$env:VERSION'." }
+          if (-not (Test-Path publish/licenses/Inter-OFL.txt)) { throw 'publish/licenses/Inter-OFL.txt is missing.' }
+          Get-ChildItem publish -Recurse -File | Format-Table FullName, Length -AutoSize
+
+      - name: Load the signing certificate
+        if: env.HAS_SIGNING == 'true'
+        shell: pwsh
+        env:
+          SIGN_CERT_PFX_BASE64: ${{ secrets.SIGN_CERT_PFX_BASE64 }}
+          SIGN_CERT_PASSWORD: ${{ secrets.SIGN_CERT_PASSWORD }}
+        run: |
+          $pfx = Join-Path $env:RUNNER_TEMP 'sign.pfx'
+          [IO.File]::WriteAllBytes($pfx, [Convert]::FromBase64String($env:SIGN_CERT_PFX_BASE64))
+          $password = ConvertTo-SecureString $env:SIGN_CERT_PASSWORD -AsPlainText -Force
+          $cert = Import-PfxCertificate -FilePath $pfx -CertStoreLocation Cert:\CurrentUser\My -Password $password
+          Remove-Item $pfx
+          $signtool = Get-ChildItem "${env:ProgramFiles(x86)}\Windows Kits\10\bin\*\x64\signtool.exe" |
+            Sort-Object { [version]$_.Directory.Parent.Name } -Descending | Select-Object -First 1
+          if (-not $signtool) { throw 'signtool.exe was not found.' }
+          "SIGN_THUMBPRINT=$($cert.Thumbprint)" >> $env:GITHUB_ENV
+          "SIGNTOOL=$($signtool.FullName)" >> $env:GITHUB_ENV
+
+      - name: Sign the exe
+        if: env.HAS_SIGNING == 'true'
+        shell: pwsh
+        run: |
+          & $env:SIGNTOOL sign /sha1 $env:SIGN_THUMBPRINT /fd sha256 /tr http://timestamp.digicert.com /td sha256 publish/ClashOverlay.exe
+          if ($LASTEXITCODE -ne 0) { throw 'Signing ClashOverlay.exe failed.' }
+
+      - name: Install Inno Setup
+        run: choco install innosetup --no-progress -y
+
+      - name: Build the installer
+        shell: pwsh
+        run: |
+          $iscc = Get-ChildItem "${env:ProgramFiles(x86)}\Inno Setup *\ISCC.exe", "$env:ProgramFiles\Inno Setup *\ISCC.exe" -ErrorAction SilentlyContinue |
+            Sort-Object FullName -Descending | Select-Object -First 1 -ExpandProperty FullName
+          if (-not $iscc) { throw 'ISCC.exe was not found.' }
+          $isccArgs = @("/DAppVersion=$env:VERSION")
+          if ($env:HAS_SIGNING -eq 'true') {
+            $isccArgs += '/DSign'
+            $isccArgs += "/Sclashsign=`$q$env:SIGNTOOL`$q sign /sha1 $env:SIGN_THUMBPRINT /fd sha256 /tr http://timestamp.digicert.com /td sha256 `$f"
+          }
+          & $iscc @isccArgs installer/ClashOverlay.iss
+          if ($LASTEXITCODE -ne 0) { throw 'The installer did not build.' }
+
+      - name: Collect the release files
+        shell: pwsh
+        run: |
+          $dist = New-Item -ItemType Directory -Force dist
+          Copy-Item "installer/Output/ClashOverlay-Setup-$env:VERSION.exe" $dist
+
+          $portable = New-Item -ItemType Directory -Force (Join-Path $env:RUNNER_TEMP 'portable')
+          Copy-Item publish/ClashOverlay.exe $portable
+          New-Item -ItemType Directory -Force (Join-Path $portable 'licenses') | Out-Null
+          Copy-Item publish/licenses/Inter-OFL.txt (Join-Path $portable 'licenses')
+          Copy-Item LICENSE (Join-Path $portable 'licenses/LICENSE.txt')
+          # Entry names use forward slashes, whichever PowerShell runs this.
+          Add-Type -AssemblyName System.IO.Compression, System.IO.Compression.FileSystem
+          $zip = [IO.Compression.ZipFile]::Open((Join-Path $dist.FullName "ClashOverlay-$env:VERSION-portable.zip"), 'Create')
+          try {
+            foreach ($file in Get-ChildItem $portable -Recurse -File) {
+              $name = $file.FullName.Substring($portable.FullName.Length + 1).Replace('\', '/')
+              [IO.Compression.ZipFileExtensions]::CreateEntryFromFile($zip, $file.FullName, $name, 'Optimal') | Out-Null
+            }
+          } finally {
+            $zip.Dispose()
+          }
+
+          Get-ChildItem dist -File | Sort-Object Name | ForEach-Object {
+            '{0}  {1}' -f (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant(), $_.Name
+          } | Set-Content -Path dist/SHA256SUMS.txt -Encoding ascii
+          Get-Content dist/SHA256SUMS.txt
+
+      - name: Create the GitHub release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create $env:TAG `
+            "dist/ClashOverlay-Setup-$env:VERSION.exe" `
+            "dist/ClashOverlay-$env:VERSION-portable.zip" `
+            dist/SHA256SUMS.txt `
+            --verify-tag --title "Clash Tracker $env:VERSION" --notes-file "$env:RUNNER_TEMP\notes.md"
+          if ($LASTEXITCODE -ne 0) { throw 'Creating the release failed.' }
+
+      - name: Remove the signing certificate
+        if: always() && env.SIGN_THUMBPRINT != ''
+        shell: pwsh
+        run: Remove-Item "Cert:\CurrentUser\My\$env:SIGN_THUMBPRINT" -ErrorAction SilentlyContinue

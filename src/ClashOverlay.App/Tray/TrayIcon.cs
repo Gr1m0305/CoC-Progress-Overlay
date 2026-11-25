@@ -40,7 +40,10 @@ internal sealed class TrayIcon : IDisposable
     private readonly TrayActions _actions;
     private readonly ToolStripMenuItem _toggle;
     private readonly ToolStripMenuItem _accounts;
+    private readonly ToolStripMenuItem _update;
+    private readonly ToolStripSeparator _updateLine;
     private Action? _balloonClick;
+    private Action? _updateClick;
 
     public TrayIcon(TrayActions actions, string tooltip)
     {
@@ -48,6 +51,10 @@ internal sealed class TrayIcon : IDisposable
         var menu = new ContextMenuStrip { Renderer = new DarkRenderer(), ShowImageMargin = false, Font = new Font("Segoe UI", 9.5f) };
         _toggle = new ToolStripMenuItem("Show overlay", null, (_, _) => actions.ToggleOverlay()) { Font = new Font("Segoe UI", 9.5f, System.Drawing.FontStyle.Bold) };
         _accounts = new ToolStripMenuItem("Account");
+        _update = new ToolStripMenuItem("Update available", null, (_, _) => _updateClick?.Invoke()) { Visible = false };
+        _updateLine = new ToolStripSeparator { Visible = false };
+        menu.Items.Add(_update);
+        menu.Items.Add(_updateLine);
         menu.Items.Add(_toggle);
         menu.Items.Add(_accounts);
         menu.Items.Add(new ToolStripSeparator());
@@ -127,6 +134,14 @@ internal sealed class TrayIcon : IDisposable
     {
         _balloonClick = onClick;
         _icon.ShowBalloonTip(8000, title, text, warning ? ToolTipIcon.Warning : ToolTipIcon.Info);
+    }
+
+    /// <summary>Shows a line at the top of the menu, such as "Update available: 1.2.0"; null hides it.</summary>
+    public void ShowUpdate(string? text, Action? onClick)
+    {
+        _update.Text = text ?? "";
+        _update.Visible = _updateLine.Visible = text is not null;
+        _updateClick = onClick;
     }
 
     public void SetTooltip(string text) => _icon.Text = text.Length > 63 ? text[..63] : text;

@@ -158,6 +158,14 @@ public sealed class AppSettings
 
     public DateTimeOffset? LastUpdateCheck { get; set; }
 
+    /// <summary>The newest release tag GitHub reported while it was newer than this copy, so the tray item survives a restart.</summary>
+    public string? UpdateTag { get; set; }
+
+    public string? UpdateUrl { get; set; }
+
+    /// <summary>The release the tray note was shown for, so each new version is announced once.</summary>
+    public string? UpdateNotifiedTag { get; set; }
+
     /// <summary>Off by default: create and rotate keys on the developer site with the saved login.</summary>
     public bool DeveloperSiteAutoKey { get; set; }
 

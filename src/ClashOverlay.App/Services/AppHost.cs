@@ -61,6 +61,7 @@ internal sealed class AppHost : IDisposable
         Store = new AccountStore(Paths, Loggers.CreateLogger("Accounts"), options.Demo ? DemoData.Exports() : null);
         Loader = new AccountLoader(Data, Api, Store, () => Settings, Time, Loggers.CreateLogger("AccountLoader"));
         Content = new ContentUpdater(this);
+        Updates = new UpdateWatcher(this);
     }
 
     public StartupOptions Options { get; }
@@ -91,6 +92,9 @@ internal sealed class AppHost : IDisposable
     public DeveloperLoginStore Logins { get; }
 
     public ContentUpdater Content { get; }
+
+    /// <summary>The once-a-day "is a newer Clash Tracker out" check.</summary>
+    public UpdateWatcher Updates { get; }
 
     public PublicIpService PublicIp { get; }
 
@@ -144,6 +148,7 @@ internal sealed class AppHost : IDisposable
 
     public void Dispose()
     {
+        Updates.Dispose();
         _apiHttp.Dispose();
         _dataHttp.Dispose();
         Loggers.Dispose();

@@ -400,7 +400,15 @@
                             <CheckBox DockPanel.Dock="Right" Style="{StaticResource Switch}" IsChecked="{Binding CheckForUpdates}" />
                             <TextBlock Style="{StaticResource Body}" VerticalAlignment="Center" Text="Tell me when a new version of Clash Tracker is out" />
                         </DockPanel>
-                        <TextBlock Style="{StaticResource Hint}" Margin="0,0,0,16" Text="Checks GitHub at most once a day. Nothing is downloaded or installed for you." />
+                        <TextBlock Style="{StaticResource Hint}" Margin="0,0,0,8" Text="Checks GitHub at most once a day. Nothing is downloaded or installed for you." />
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                            <Button Style="{StaticResource SecondaryButton}" Content="Check now" Command="{Binding CheckAppUpdateCommand}" />
+                            <TextBlock Style="{StaticResource Muted}" Margin="12,0,0,0" VerticalAlignment="Center" TextWrapping="Wrap" MaxWidth="420"
+                                       Text="{Binding AppUpdateStatus}" Visibility="{Binding AppUpdateStatus, Converter={StaticResource Vis}}" />
+                        </StackPanel>
+                        <Button Margin="0,4,0,16" HorizontalAlignment="Left" Style="{StaticResource LinkButton}" Content="Open the download page"
+                                Command="{Binding OpenLinkCommand}" CommandParameter="{Binding AppUpdateUrl}" Visibility="{Binding AppUpdateUrl, Converter={StaticResource Vis}}" />
+                        <Border Height="12" Visibility="{Binding AppUpdateUrl, Converter={StaticResource Vis}, ConverterParameter=not}" />
 
                         <DockPanel Style="{StaticResource SwitchRow}" Margin="0,0,0,4">
                             <CheckBox DockPanel.Dock="Right" Style="{StaticResource Switch}" IsChecked="{Binding StartWithWindows}" IsEnabled="{Binding CanChangeSystem}" />

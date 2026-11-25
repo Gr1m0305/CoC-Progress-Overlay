@@ -31,6 +31,83 @@ It does this for the Main Village and the Builder Base, for as many accounts as 
 * Between exports the overlay counts running timers down. You can mark an upgrade as done with
   **+1** on its row instead of exporting again.
 
+## Install
+
+1. Download `ClashOverlay-Setup-X.Y.Z.exe` from the
+   [latest release](https://github.com/Gr1m0305/CoC-Progress-Overlay/releases/latest).
+2. Run it. It installs for your Windows account only, into `%LOCALAPPDATA%\Programs\ClashOverlay`,
+   without asking for administrator rights.
+   * It adds a Start menu shortcut, and a desktop shortcut if you tick that box.
+   * **Start Clash Tracker when I sign in to Windows** is ticked by default. It is the same switch
+     as Settings → Data and updates, so changing either one changes both.
+3. Leave **Launch Clash Tracker** ticked on the last page. The first time, Clash Tracker opens its
+   setup, which has four steps:
+   1. Make your API key (see [Getting an API key](#getting-an-api-key)).
+   2. Paste the key.
+   3. Add your player tags.
+   4. Import your village.
+
+### "Windows protected your PC"
+
+Releases are only code-signed when a signing certificate is set up (see [Releasing](#releasing)).
+For an unsigned release, Windows SmartScreen shows **Windows protected your PC** the first time you
+run the setup:
+
+1. Click **More info**.
+2. Check that the app is `ClashOverlay-Setup-X.Y.Z.exe`.
+3. Click **Run anyway**.
+
+To check that the download is the published file, compare its hash with `SHA256SUMS.txt` from the
+same release:
+
+```powershell
+Get-FileHash .\ClashOverlay-Setup-1.0.0.exe -Algorithm SHA256
+```
+
+### Updating
+
+Clash Tracker asks GitHub once a day whether a new version is out. You can turn this off in
+Settings → Data and updates, or press **Check now** there. When there is a new version:
+
+* You get one notification.
+* **Update available** appears at the top of the tray menu.
+
+Both only open the release page. Nothing is downloaded or installed for you.
+
+To update, download the new `ClashOverlay-Setup-X.Y.Z.exe` and run it. It closes the running
+Clash Tracker, installs over the old version and keeps your settings, key, accounts and data.
+
+### Uninstalling
+
+In Windows, open **Settings** → **Apps**, find **Clash Tracker** and choose **Uninstall**.
+Control Panel → Programs and Features works too. The uninstaller closes Clash Tracker and asks
+whether to delete your data too. Then it removes the program, its shortcuts and the Start with
+Windows entry. The answers to the data question:
+
+* **No** (the default) keeps `%LOCALAPPDATA%\ClashOverlay`: your settings, the saved API key,
+  your accounts, imported exports and the downloaded game data. If you install again later, Clash
+  Tracker picks up where you left off.
+* **Yes** deletes that folder as well.
+
+A silent uninstall keeps the data unless you add `/DELETEDATA`:
+
+```powershell
+& "$env:LOCALAPPDATA\Programs\ClashOverlay\unins000.exe" /VERYSILENT /DELETEDATA
+```
+
+### Portable zip
+
+`ClashOverlay-X.Y.Z-portable.zip` holds the same single `ClashOverlay.exe`, so it needs no
+install:
+
+* **To use it**, unzip it anywhere and run `ClashOverlay.exe`. It uses the same
+  `%LOCALAPPDATA%\ClashOverlay` data folder as the installed copy. Only one copy runs at a time.
+* **To start it with Windows**, turn on Settings → Data and updates → Start Clash Tracker when I
+  sign in. Windows then starts the copy you ran.
+* **To update it**, exit it from the tray and replace the exe.
+* **To remove it**, exit it from the tray and delete its folder. Delete
+  `%LOCALAPPDATA%\ClashOverlay` too if you want your data gone.
+
 ## Using it
 
 | Key | What it does |
@@ -133,9 +210,13 @@ Everything lives in `%LOCALAPPDATA%\ClashOverlay`:
 | `data\`, `assets\` | ClashKing game data and images |
 | `logs\` | Logs, kept for 14 days |
 
-Nothing is sent anywhere except to the Clash of Clans API, the developer site if you turn on
-automatic keys, a public-IP lookup (ipify, with Amazon and icanhazip as fallbacks), and the
-ClashKing download servers.
+Clash Tracker only connects to:
+
+* the Clash of Clans API
+* the developer site, if you turn on automatic keys
+* a public-IP lookup: ipify, with Amazon and icanhazip as fallbacks
+* the ClashKing download servers
+* GitHub, for the daily new-version check, if it is on
 
 ## Trying it without a key
 
@@ -156,11 +237,18 @@ dotnet test ClashOverlay.sln
 ```
 
 ```powershell
-dotnet publish src/ClashOverlay.App/ClashOverlay.App.csproj -p:PublishProfile=win-x64
+dotnet publish src/ClashOverlay.App/ClashOverlay.App.csproj -c Release -p:PublishProfile=win-x64
 ```
 
 The publish step writes one self-contained `publish/ClashOverlay.exe`. Add
 `-p:ClashVersion=1.2.3` to stamp a version; without it the version is `0.0.0-dev`.
+
+To build the installer, install [Inno Setup](https://jrsoftware.org/isinfo.php) 6.3 or newer,
+publish as above, then run its compiler. The setup lands in `installer/Output/`.
+
+```powershell
+& "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" /DAppVersion=1.2.3 installer\ClashOverlay.iss
+```
 
 `tools/AssetFetch` is the downloader the app uses for game data and images. Run it on its own with
 `dotnet run --project tools/AssetFetch -- --out <folder>`. Downloaded data and images must never
@@ -168,6 +256,56 @@ be committed; `.gitignore` keeps them out.
 
 See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for how the code is laid out and
 [docs/DATA_NOTES.md](docs/DATA_NOTES.md) for the data sources and the Town Hall 19 checks.
+
+## Releasing
+
+For the maintainer. A release is made by pushing a version tag:
+
+1. Add a section for the new version at the top of `CHANGELOG.md`, such as
+   `## [1.1.0] - 2026-12-24`, and list the changes under it. The release notes are copied from this
+   section, and the release stops if it is missing.
+2. Commit that and push it.
+3. Tag the commit and push the tag:
+
+   ```powershell
+   git tag v1.1.0
+   ```
+
+   ```powershell
+   git push origin v1.1.0
+   ```
+
+The **Release** workflow (`.github/workflows/release.yml`) then does the rest:
+
+1. Runs the tests. If any test fails, no release is made.
+2. Publishes the single-file exe, stamped with the version from the tag.
+3. Builds the installer with Inno Setup.
+4. Zips the portable build and writes `SHA256SUMS.txt`.
+5. Creates the GitHub release with those three files.
+
+If it fails, fix the problem, delete the tag, and tag again:
+
+```powershell
+git tag -d v1.1.0
+```
+
+```powershell
+git push origin :refs/tags/v1.1.0
+```
+
+**Signing is optional.** In the repository's Settings → Secrets and variables → Actions, add these
+two secrets:
+
+* `SIGN_CERT_PFX_BASE64`: the code-signing `.pfx` file as base64, for example from
+  `[Convert]::ToBase64String([IO.File]::ReadAllBytes("cert.pfx"))`.
+* `SIGN_CERT_PASSWORD`: its password.
+
+The workflow then signs `ClashOverlay.exe`, the setup and the uninstaller with signtool, using a
+DigiCert timestamp. Without the secrets, releases are unsigned (see
+["Windows protected your PC"](#windows-protected-your-pc)).
+
+The **CI** workflow (`.github/workflows/ci.yml`) builds and tests every push and pull request, and
+checks that the installer still compiles.
 
 ## Credits
 

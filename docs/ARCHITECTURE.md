@@ -42,6 +42,8 @@ API and the village JSON the player exports from the game.
   * `Assets/AssetPaths`: ClashKing CDN path for any item/level; the local PNG path.
   * `Settings/`: `AppSettings` and friends (JSON in `%LOCALAPPDATA%\ClashOverlay\settings.json`),
     `HotkeyGesture`, `GameWindowRule`.
+  * `Updates/ReleaseChecker`: one call to GitHub's `releases/latest` and a version compare, for
+    the daily new-version check.
 * **`src/ClashOverlay.Api`**: `IClashApiClient` / `ClashApiClient` (HttpClient, typed DTOs,
   per-account disk cache with timestamps, 429/5xx backoff, typed errors including
   `InvalidIp`), `ApiKeyStore` (DPAPI, CurrentUser), `PublicIpService`, and the optional
@@ -78,9 +80,10 @@ Everything the app writes lives in `%LOCALAPPDATA%\ClashOverlay\`:
 
 ## Flow
 
-1. **Start**: single-instance mutex `Local\ClashOverlay.SingleInstance` (the installer uses it to
-   close a running copy). Settings load, logging starts, the tray icon appears. If no key is
-   stored, first-run setup opens. If no static data is present it downloads in the background.
+1. **Start**: single-instance mutex `Local\ClashOverlay.SingleInstance` (`Local\ClashOverlay.Demo`
+   for a demo copy). The installer looks for these mutexes and sets the event
+   `Local\ClashOverlay.Exit` to close every running copy before it replaces the exe. Settings
+   load, logging starts, the tray icon appears. If no key is stored, first-run setup opens. If no static data is present it downloads in the background.
 2. **Detect**: `GameDetector` listens to `SetWinEventHook` events and polls every 3 s. When a
    rule matches it raises `GameAppeared` (tray toast once per session: "Clash of Clans
    detected, press Ctrl+R"). Foreground changes decide whether hotkeys are registered.
@@ -94,6 +97,26 @@ Everything the app writes lives in `%LOCALAPPDATA%\ClashOverlay\`:
 5. **Compute**: `AccountSession` merges the export with the cached API player into a
    `VillageState`, then the calculators produce the view models for every tab.
 6. **Hide**: on the hotkey, Esc, the game being minimised or closed.
+
+## Releases and updates
+
+* **Version**: one property, `ClashVersion` in `Directory.Build.props` (`0.0.0-dev` unless a build
+  passes `-p:ClashVersion=X.Y.Z`). The release workflow takes it from the `vX.Y.Z` tag, and it
+  ends up in the assembly, file and product versions, the About page and the installer.
+* **Publish**: `Properties/PublishProfiles/win-x64.pubxml` makes one self-contained
+  `publish/ClashOverlay.exe`, with the Inter licence beside it in `licenses\`.
+* **Installer**: `installer/ClashOverlay.iss` (Inno Setup 6) installs per user into
+  `%LOCALAPPDATA%\Programs\ClashOverlay` with no admin prompt. It writes the same `HKCU\…\Run`
+  value as the app's Start with Windows switch (`StartupRegistration`). On uninstall it asks
+  whether to delete `%LOCALAPPDATA%\ClashOverlay`. A silent uninstall keeps the folder unless
+  `/DELETEDATA` is passed.
+* **Workflows**: `.github/workflows/ci.yml` builds, tests and compiles the installer on every
+  push and pull request. `.github/workflows/release.yml` runs on `v*` tags: it tests, publishes,
+  signs if secrets are set, builds the installer, zips the portable build, writes
+  `SHA256SUMS.txt` and creates the release with the notes from `CHANGELOG.md`.
+* **New-version check**: `UpdateWatcher` asks GitHub at most once a day, when the setting is on
+  and the build is not `0.0.0-dev`. A new version shows one tray note and an "Update available"
+  menu item, and both only open the release page.
 
 ## Decisions
 
