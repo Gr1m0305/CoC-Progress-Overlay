@@ -211,14 +211,25 @@ downloaded data (`tests/.../Th19ChecksTests.cs`).
   dark_elixir, shiny_ore, glowy_ore, starry_ore, builder_gold, builder_elixir, gems),
   `leagues/league-tier/{name}.png` (e.g. `electro_league_33.png`, `legend_league_1.png`,
   `unranked.png`: Roman numerals in names become digits), `leagues/builder-base/{name}.png`
-  (`wood_league_5.png`, `diamond_league.png`). Town Hall 19 also has
-  `buildings/home-village/town_hall/level_19_{barbarian|archer|wizard}.webp`.
-* `https://assets.clashk.ing/manifest.json` lists every asset with its SHA-256
-  (`assets.<group>[] {path, sha}`). AssetFetch uses it to download only missing or changed
-  files with one request; when it is unavailable it falls back to a `HEAD` per file and
-  compares `Last-Modified`.
+  (`wood_league_5.png`, `diamond_league.png`), `leagues/cwl/{name}.png` for war leagues
+  (`champion_league_2.png`, `legend_league.png`, `unranked.png`),
+  `leagues/capital-leagues/{name}.png`, `player_labels/{name}.webp`, and UI icons such as
+  `icons/Icon_HV_Trophy.png`, `icons/Icon_HV_Gold_Pass.png`, `icons/Icon_DC_CWL.png`. Town Hall 19
+  also has `buildings/home-village/town_hall/level_19_{barbarian|archer|wizard}.webp`.
+* Coverage (checked against the live manifest on 25 Nov 2026, and by `CdnCoverageTests` on every
+  test run): every building and trap level, every unit, hero, pet, spell, equipment, guardian
+  and helper in the static data, every league and the resource icons resolve with the rules
+  above; nothing the overlay needs is missing.
+* `https://assets.clashk.ing/manifest.json` (about 650 KB) lists every asset with the SHA-256
+  of the file (`{"version": 2, "assets": {"<group>": [{path, display_name, sha, animated}]}}`).
+  AssetFetch uses it to download only missing or changed files with one request and checks
+  each download against its SHA; when it is unavailable it falls back to a `HEAD` per file and
+  compares `Last-Modified`. A full first fetch is 1,239 files, about 40 MB of PNG, in under a
+  minute; a repeat run downloads nothing.
 * Files are converted from WebP to PNG with SkiaSharp (WPF's WebP decoding depends on a codec
-  that not every Windows install has) and stored under `%LOCALAPPDATA%\ClashOverlay\assets\`.
+  that not every Windows install has), scaled so the long side is at most 256 px, and stored
+  under `%LOCALAPPDATA%\ClashOverlay\assets\`, with `assets\manifest.json` recording each
+  file's SHA and `Last-Modified`.
   Missing images fall back to the nearest lower level, then to a placeholder tile with the
   item's initials. The API's own icon URLs (league, labels, clan badge) are downloaded as-is
   and cached.
