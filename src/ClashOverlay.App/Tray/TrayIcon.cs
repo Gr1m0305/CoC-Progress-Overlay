@@ -28,6 +28,9 @@ internal sealed class TrayActions
     public required Action Exit { get; init; }
 
     public required Func<string> ToggleHint { get; init; }
+
+    /// <summary>The key that jumps to account n (1-9), shown beside it in the menu.</summary>
+    public Func<int, string>? AccountHint { get; init; }
 }
 
 /// <summary>The notification-area icon and its menu (WinForms, the only WinForms use in the app).</summary>
@@ -60,7 +63,7 @@ internal sealed class TrayIcon : IDisposable
 
         if (actions.CheckForUpdates is { } update)
         {
-            menu.Items.Add(new ToolStripMenuItem("Check for data update", null, (_, _) => update()));
+            menu.Items.Add(new ToolStripMenuItem("Update game data and images", null, (_, _) => update()));
         }
 
         menu.Items.Add(new ToolStripMenuItem("Preview with demo data", null, (_, _) => actions.Preview()));
@@ -111,7 +114,7 @@ internal sealed class TrayIcon : IDisposable
             var item = new ToolStripMenuItem(label, null, (_, _) => _actions.SelectAccount(tag)) { Checked = selected };
             if (i <= 9)
             {
-                item.ShortcutKeyDisplayString = $"Ctrl+{i}";
+                item.ShortcutKeyDisplayString = _actions.AccountHint?.Invoke(i) ?? $"Ctrl+{i}";
             }
 
             _accounts.DropDownItems.Add(item);

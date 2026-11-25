@@ -16,6 +16,9 @@ internal sealed class AccountStore(AppPaths paths, ILogger logger, IReadOnlyDict
 
     public bool InMemory => demoExports is not null;
 
+    /// <summary>An account's export or hand edits changed (the tag), or the account was deleted.</summary>
+    public event EventHandler<string>? Changed;
+
     public VillageExport? LoadExport(string tag, out string? problem)
     {
         problem = null;
@@ -69,6 +72,7 @@ internal sealed class AccountStore(AppPaths paths, ILogger logger, IReadOnlyDict
         }
 
         logger.LogInformation("Imported export for {Tag} taken {Timestamp}", export.Tag, export.Timestamp);
+        Changed?.Invoke(this, PlayerTag.Normalize(expectedTag));
         return export;
     }
 
@@ -86,6 +90,14 @@ internal sealed class AccountStore(AppPaths paths, ILogger logger, IReadOnlyDict
         LevelEdits.Save(paths.EditsFile(tag), edits);
     }
 
+    /// <summary>"Clear manual changes": drops every hand edit of the account.</summary>
+    public void ClearEdits(string tag)
+    {
+        SaveEdits(tag, []);
+        logger.LogInformation("Cleared the hand edits of {Tag}", tag);
+        Changed?.Invoke(this, PlayerTag.Normalize(tag));
+    }
+
     /// <summary>Removes the account's export, edits and cached API answers.</summary>
     public void Delete(string tag)
     {
@@ -93,6 +105,7 @@ internal sealed class AccountStore(AppPaths paths, ILogger logger, IReadOnlyDict
         {
             _memoryExports.Remove(PlayerTag.Normalize(tag));
             _memoryEdits.Remove(PlayerTag.Normalize(tag));
+            Changed?.Invoke(this, PlayerTag.Normalize(tag));
             return;
         }
 
@@ -112,5 +125,6 @@ internal sealed class AccountStore(AppPaths paths, ILogger logger, IReadOnlyDict
         }
 
         logger.LogInformation("Deleted the data of account {Tag}", tag);
+        Changed?.Invoke(this, PlayerTag.Normalize(tag));
     }
 }

@@ -28,7 +28,9 @@ internal sealed partial class AccountItemViewModel(AccountSettings account, int 
 
     public string Hall => Account.TownHall > 0 ? $"TH{Account.TownHall}" : "";
 
-    public string KeyHint => Index < 9 ? $"Ctrl+{Index + 1}" : "";
+    /// <summary>The key that jumps to this account (Ctrl+1 by default), or empty after the ninth.</summary>
+    [ObservableProperty]
+    private string _keyHint = "";
 
     [ObservableProperty]
     private bool _isSelected;
@@ -65,6 +67,14 @@ internal sealed partial class OverlayViewModel : ObservableObject
         _clock.Tick += (_, _) => Tick();
         host.SettingsChanged += (_, _) => OnSettingsChanged();
         host.Data.Changed += async (_, _) => await LoadAsync(force: false);
+        host.Store.Changed += (_, tag) => Dispatch(() =>
+        {
+            if (tag == SelectedAccount?.Tag)
+            {
+                _ = LoadAsync(force: false);
+            }
+        });
+        host.Content.ImagesChanged += (_, _) => Dispatch(RefreshImages);
         RebuildAccounts();
     }
 
@@ -349,12 +359,31 @@ internal sealed partial class OverlayViewModel : ObservableObject
         }
     }
 
+    private static void Dispatch(Action action) => System.Windows.Application.Current.Dispatcher.BeginInvoke(action);
+
+    /// <summary>New images were downloaded: load them into the account list and tabs.</summary>
+    private void RefreshImages()
+    {
+        foreach (var a in Accounts)
+        {
+            a.HallImage = HallImage(a.Account.TownHall);
+        }
+
+        OnPropertyChanged(nameof(AccountImage));
+        RebuildTabs();
+    }
+
     private ImageSource? HallImage(int th) =>
         th > 0 && _host.Data.Data is { } game ? _host.Images.Item(game.Hall(Village.Home), th, 64) : null;
 
     private void UpdateHotkeyHints()
     {
         var k = _host.Settings.Hotkeys;
+        foreach (var a in Accounts)
+        {
+            a.KeyHint = a.Index < 9 ? HotkeyPlan.AccountGesture(k, a.Index + 1) : "";
+        }
+
         var parts = new List<string> { $"{k.Toggle} hide", $"{k.SwitchVillage} village" };
         if (_host.Settings.Accounts.Count > 1)
         {

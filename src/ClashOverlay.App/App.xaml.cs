@@ -5,6 +5,8 @@ using ClashOverlay.App.Overlay;
 using ClashOverlay.App.Services;
 using ClashOverlay.App.Tray;
 using ClashOverlay.App.ViewModels;
+using ClashOverlay.App.Windows;
+using ClashOverlay.Core.Settings;
 using Microsoft.Extensions.Logging;
 
 namespace ClashOverlay.App;
@@ -24,6 +26,13 @@ public partial class App : Application
     private OverlayCoordinator? _overlay;
     private OverlayViewModel? _vm;
     private TrayIcon? _tray;
+    private KeyWatcher? _keys;
+    private SetupWindow? _setup;
+    private SettingsWindow? _settings;
+    private ImportWindow? _import;
+
+    /// <summary>Images and data are checked again in the background when the last check is older than this.</summary>
+    private static readonly TimeSpan ContentCheckInterval = TimeSpan.FromDays(7);
 
     internal AppHost Host => _host!;
 
@@ -55,7 +64,7 @@ public partial class App : Application
             args.SetObserved();
         };
 
-        if (!_host.Data.TryLoad())
+        if (!_host.Data.TryLoad() && options.Demo)
         {
             _ = UpdateDataInBackground();
         }
@@ -89,7 +98,32 @@ public partial class App : Application
         if (options.Demo)
         {
             _overlay.Show();
+            return;
         }
+
+        _keys = new KeyWatcher(_host, (title, text, click, warning) => _tray.Notify(title, text, click, warning), () => OpenSetup(1));
+        if (!_host.Settings.SetupCompleted)
+        {
+            if (options.FromStartup)
+            {
+                _tray.Notify("Finish setting up Clash Tracker", "Click here to make your API key and add your accounts.", () => OpenSetup(1));
+            }
+            else
+            {
+                OpenSetup(1);
+            }
+        }
+        else
+        {
+            _ = _keys.CheckAtStartAsync();
+        }
+
+        if (options.OpenSettings)
+        {
+            OpenSettings(null);
+        }
+
+        _ = UpdateContentAtStart();
     }
 
     private TrayActions TrayActions() => new()
@@ -98,13 +132,161 @@ public partial class App : Application
         ToggleHint = () => _host!.Settings.Hotkeys.Toggle,
         Accounts = () => _vm!.Accounts.Select(a => (a.Tag, string.IsNullOrEmpty(a.Hall) ? a.Name : $"{a.Name}  ({a.Hall})", a.IsSelected)).ToList(),
         SelectAccount = tag => _vm!.SelectAccount(_vm.Accounts.ToList().FindIndex(a => a.Tag == tag)),
+        AccountHint = n => HotkeyPlan.AccountGesture(_host!.Settings.Hotkeys, n),
+        ImportExport = _host!.IsDemo ? null : () => OpenImport(null),
+        OpenSettings = () => OpenSettings(null),
+        CheckForUpdates = _host.IsDemo ? null : () => _ = UpdateContentFromTray(),
+        About = () => OpenSettings(SettingsViewModel.AboutPage),
         Preview = StartDemo,
         OpenLogs = () => OpenFolder(_host!.Paths.Logs),
         Exit = Shutdown,
     };
 
-    private void OnSecondInstance() =>
-        _tray?.Notify("Clash Tracker is already running", $"It lives in the notification area. Press {_host!.Settings.Hotkeys.Toggle} over the game.");
+    /// <summary>Started again while running (Start menu, desktop shortcut): show a window rather than nothing.</summary>
+    private void OnSecondInstance()
+    {
+        if (!_host!.Settings.SetupCompleted)
+        {
+            OpenSetup(1);
+        }
+        else
+        {
+            OpenSettings(null);
+        }
+    }
+
+    // ----- windows (one of each) -----
+
+    internal void OpenSetup(int step)
+    {
+        if (_setup is { } open)
+        {
+            open.ViewModel.Step = Math.Clamp(step, 1, 4);
+            open.ShowOrActivate();
+            return;
+        }
+
+        var vm = new SetupViewModel(_host!, _keys, step);
+        var window = new SetupWindow(vm);
+        var finished = false;
+        vm.Finished += (_, _) => finished = true;
+        window.Closed += (_, _) =>
+        {
+            _setup = null;
+            var s = _host!.Settings;
+            if (!s.SetupCompleted && _host.Keys.HasKey && s.Accounts.Count > 0)
+            {
+                // Closed after the parts that matter; the import can come later.
+                s.SetupCompleted = true;
+                _host.SaveSettings();
+                finished = true;
+            }
+
+            if (finished)
+            {
+                _tray?.Notify("Clash Tracker is ready", $"Press {s.Hotkeys.Toggle} while the game is in front to show it. Clash Tracker stays here in the notification area.");
+                _ = _vm?.LoadAsync(force: true);
+            }
+            else if (!s.SetupCompleted)
+            {
+                _tray?.Notify("Setup is not finished", "Click here to carry on. Clash Tracker needs an API key and at least one account.", () => OpenSetup(1));
+            }
+        };
+        _setup = window;
+        window.ShowOrActivate();
+    }
+
+    internal void OpenSettings(string? page)
+    {
+        if (_settings is { } open)
+        {
+            open.ViewModel.ShowPage(page);
+            open.ShowOrActivate();
+            return;
+        }
+
+        var actions = new SettingsActions
+        {
+            Preview = StartDemo,
+            OpenSetup = OpenSetup,
+            OpenImport = OpenImport,
+            Confirm = Confirm,
+            OpenFolder = OpenFolder,
+        };
+        var window = new SettingsWindow(new SettingsViewModel(_host!, _host!.IsDemo ? null : _detector, actions, page));
+        window.Closed += (_, _) => _settings = null;
+        _settings = window;
+        window.ShowOrActivate();
+    }
+
+    internal void OpenImport(string? tag)
+    {
+        if (_host!.Settings.Accounts.Count == 0)
+        {
+            OpenSettings(SettingsViewModel.AccountsPage);
+            return;
+        }
+
+        if (_import is { } open)
+        {
+            open.ViewModel.Select(tag);
+            open.ShowOrActivate();
+            return;
+        }
+
+        var window = new ImportWindow(new ImportViewModel(_host, tag));
+        window.Closed += (_, _) => _import = null;
+        _import = window;
+        window.ShowOrActivate();
+    }
+
+    private bool Confirm(string title, string question)
+    {
+        var owner = Windows.OfType<Window>().FirstOrDefault(w => w.IsActive);
+        var answer = owner is null
+            ? MessageBox.Show(question, title, MessageBoxButton.YesNo, MessageBoxImage.Warning, MessageBoxResult.No)
+            : MessageBox.Show(owner, question, title, MessageBoxButton.YesNo, MessageBoxImage.Warning, MessageBoxResult.No);
+        return answer == MessageBoxResult.Yes;
+    }
+
+    // ----- game data and images -----
+
+    /// <summary>First run: download data and images with notifications. Later: a quiet check once a week.</summary>
+    private async Task UpdateContentAtStart()
+    {
+        var host = _host!;
+        var missing = host.Data.Data is null || host.Content.ImagesMissing;
+        if (!missing && host.Content.ImagesUpdatedAt is { } last && host.Time.GetUtcNow() - last < ContentCheckInterval)
+        {
+            return;
+        }
+
+        if (missing)
+        {
+            _tray?.Notify("Downloading game data", "Clash Tracker is downloading upgrade data and images. The first time takes a minute or two.");
+        }
+
+        var result = await host.Content.RunAsync(force: false);
+        host.Log.LogInformation("Start-up content check: {Title}. {Detail}", result.Title, result.Detail);
+        if (missing || !result.Ok)
+        {
+            _tray?.Notify(result.Ok ? "Game data is ready" : result.Title, result.Detail, null, !result.Ok);
+        }
+    }
+
+    private async Task UpdateContentFromTray()
+    {
+        var host = _host!;
+        if (host.Content.IsRunning)
+        {
+            _tray?.Notify("Already updating", host.Content.Status ?? "An update is running.");
+            return;
+        }
+
+        _tray?.Notify("Checking for updates", "Checking game data and images…");
+        var result = await host.Content.RunAsync(force: false);
+        _tray?.Notify(result.Title, result.Detail, null, !result.Ok);
+    }
 
     /// <summary>A second copy of the app in demo mode (no game, key or internet needed).</summary>
     private void StartDemo()

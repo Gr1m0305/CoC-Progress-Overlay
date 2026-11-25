@@ -25,6 +25,9 @@ public sealed record AssetFetchResult(
 /// </summary>
 public sealed class AssetFetcher
 {
+    /// <summary>Whole CDN folders the overlay can use (named by the API, not by the static data).</summary>
+    public static readonly IReadOnlyList<string> ExtraFolders = ["player_labels"];
+
     private readonly HttpClient _http;
     private readonly string _dir;
     private readonly ILogger _log;

@@ -1,0 +1,201 @@
+<w:AppWindow x:Class="ClashOverlay.App.Windows.SetupWindow" x:ClassModifier="internal"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:w="clr-namespace:ClashOverlay.App.Windows"
+             xmlns:v="clr-namespace:ClashOverlay.App.Views"
+             Title="Set up Clash Tracker" Width="900" Height="640" MinWidth="760" MinHeight="560">
+    <Window.Resources>
+        <v:VisibleIf x:Key="Vis" />
+        <Style x:Key="StepNumber" TargetType="Border">
+            <Setter Property="Width" Value="26" />
+            <Setter Property="Height" Value="26" />
+            <Setter Property="CornerRadius" Value="13" />
+            <Setter Property="Background" Value="{StaticResource CardBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource InputBorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+        </Style>
+        <Style x:Key="Instruction" TargetType="TextBlock" BasedOn="{StaticResource Body}">
+            <Setter Property="Margin" Value="0,0,0,0" />
+        </Style>
+    </Window.Resources>
+
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="250" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+
+        <!-- step list -->
+        <Border Background="{StaticResource SidebarBrush}" BorderBrush="{StaticResource DividerBrush}" BorderThickness="0,0,1,0">
+            <DockPanel Margin="18,22,14,18">
+                <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="4,0,0,22">
+                    <Image Source="pack://application:,,,/Assets/app.ico" Width="26" Height="26" RenderOptions.BitmapScalingMode="HighQuality" />
+                    <TextBlock Margin="10,0,0,0" VerticalAlignment="Center" Style="{StaticResource Strong}" FontSize="15" Text="Clash Tracker setup" />
+                </StackPanel>
+                <TextBlock DockPanel.Dock="Bottom" Style="{StaticResource Hint}" Margin="4,0,0,0"
+                           Text="Not affiliated with, endorsed, sponsored or approved by Supercell." />
+                <ListBox ItemsSource="{Binding Steps}" SelectedItem="{Binding SelectedStep, Mode=TwoWay}" Background="Transparent" BorderThickness="0"
+                         ItemContainerStyle="{StaticResource NavItem}" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <DockPanel Margin="0,2">
+                                <Border DockPanel.Dock="Left" Style="{StaticResource StepNumber}" Margin="0,0,12,0" VerticalAlignment="Center">
+                                    <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="12" FontWeight="Bold" Text="{Binding Number}" />
+                                </Border>
+                                <StackPanel>
+                                    <TextBlock Text="{Binding Title}" TextTrimming="CharacterEllipsis" />
+                                    <TextBlock Margin="0,2,0,0" FontSize="11.5" FontWeight="Normal" Foreground="{StaticResource MutedTextBrush}" Text="{Binding Subtitle}" TextTrimming="CharacterEllipsis" />
+                                </StackPanel>
+                            </DockPanel>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </DockPanel>
+        </Border>
+
+        <!-- pages -->
+        <DockPanel Grid.Column="1">
+            <Border DockPanel.Dock="Bottom" BorderBrush="{StaticResource DividerBrush}" BorderThickness="0,1,0,0" Padding="28,14">
+                <DockPanel>
+                    <Button DockPanel.Dock="Right" Style="{StaticResource PrimaryButton}" MinWidth="96" Content="{Binding NextText}" Command="{Binding NextCommand}" />
+                    <Button DockPanel.Dock="Right" Style="{StaticResource SecondaryButton}" Margin="0,0,10,0" MinWidth="80" Content="Back" Command="{Binding BackCommand}" />
+                    <TextBlock VerticalAlignment="Center" Style="{StaticResource Hint}" Margin="0" Text="You can change all of this later in Settings." />
+                </DockPanel>
+            </Border>
+
+            <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="32,26,32,20">
+                <Grid MaxWidth="640" HorizontalAlignment="Left">
+
+                    <!-- 1: create the key -->
+                    <StackPanel Visibility="{Binding IsStep1, Converter={StaticResource Vis}}">
+                        <TextBlock Style="{StaticResource PageTitle}" Text="Create your API key" />
+                        <TextBlock Style="{StaticResource Body}" Margin="0,8,0,18"
+                                   Text="Clash Tracker reads your profile from the official Clash of Clans API with a key you make yourself. It is free and takes a minute. The key stays on this PC." />
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="34" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+                            <TextBlock Style="{StaticResource Strong}" Text="1" />
+                            <StackPanel Grid.Column="1" Margin="0,0,0,16">
+                                <TextBlock Style="{StaticResource Instruction}"
+                                           Text="Open the developer site and sign in, or create a free account there (it is separate from your Supercell ID)." />
+                                <Button Margin="0,10,0,0" HorizontalAlignment="Left" Style="{StaticResource PrimaryButton}" Content="Open developer.clashofclans.com" Command="{Binding OpenSiteCommand}" />
+                            </StackPanel>
+                            <TextBlock Grid.Row="1" Style="{StaticResource Strong}" Text="2" />
+                            <TextBlock Grid.Row="1" Grid.Column="1" Margin="0,0,0,16" Style="{StaticResource Instruction}"
+                                       Text="Open My Account and choose Create New Key. Any name and description will do." />
+                            <TextBlock Grid.Row="2" Style="{StaticResource Strong}" Text="3" />
+                            <StackPanel Grid.Row="2" Grid.Column="1" Margin="0,0,0,16">
+                                <TextBlock Style="{StaticResource Instruction}" Text="Under Allowed IP addresses, enter this PC's public IP address:" />
+                                <Border Margin="0,10,0,0" Style="{StaticResource Panel}" Padding="14,10" HorizontalAlignment="Left" MinWidth="320">
+                                    <DockPanel>
+                                        <Button DockPanel.Dock="Right" Margin="14,0,0,0" Style="{StaticResource SecondaryButton}" Content="Copy" Command="{Binding CopyIpCommand}"
+                                                Visibility="{Binding PublicIp, Converter={StaticResource Vis}}" />
+                                        <TextBlock DockPanel.Dock="Right" VerticalAlignment="Center" Margin="10,0,0,0" Style="{StaticResource Muted}" Foreground="{StaticResource OkBrush}" Text="{Binding CopyText}" />
+                                        <TextBlock VerticalAlignment="Center" Style="{StaticResource Strong}" FontSize="16" FontFamily="Consolas" Text="{Binding IpText}" TextWrapping="Wrap" />
+                                    </DockPanel>
+                                </Border>
+                            </StackPanel>
+                            <TextBlock Grid.Row="3" Style="{StaticResource Strong}" Text="4" />
+                            <TextBlock Grid.Row="3" Grid.Column="1" Style="{StaticResource Instruction}"
+                                       Text="Create the key, open it, and copy the long token shown under Key. Then press Next." />
+                        </Grid>
+                        <TextBlock Style="{StaticResource Hint}" Margin="0,20,0,0"
+                                   Text="Keys only work from the addresses you list. If your internet provider gives you a new address, Clash Tracker tells you and brings you back here." />
+                    </StackPanel>
+
+                    <!-- 2: paste and test -->
+                    <StackPanel Visibility="{Binding IsStep2, Converter={StaticResource Vis}}">
+                        <TextBlock Style="{StaticResource PageTitle}" Text="Paste and test your key" />
+                        <TextBlock Style="{StaticResource Body}" Margin="0,8,0,16"
+                                   Text="Paste the token from the developer site. Clash Tracker makes one real call to check it, then saves it encrypted for your Windows account." />
+                        <TextBox Style="{StaticResource Input}" Height="86" TextWrapping="Wrap" AcceptsReturn="False" VerticalContentAlignment="Top" VerticalScrollBarVisibility="Auto"
+                                 FontFamily="Consolas" FontSize="12" Tag="eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiIs…"
+                                 Text="{Binding KeyText, UpdateSourceTrigger=PropertyChanged}" />
+                        <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
+                            <Button Style="{StaticResource PrimaryButton}" Content="Test and save" Command="{Binding TestKeyCommand}" />
+                            <TextBlock Margin="12,0,0,0" VerticalAlignment="Center" Style="{StaticResource Muted}" Text="Checking…" Visibility="{Binding IsTesting, Converter={StaticResource Vis}}" />
+                        </StackPanel>
+                        <TextBlock Margin="0,12,0,0" TextWrapping="Wrap" Text="{Binding KeyResult}" Visibility="{Binding KeyResult, Converter={StaticResource Vis}}">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock" BasedOn="{StaticResource Body}">
+                                    <Setter Property="Foreground" Value="{StaticResource ProblemBrush}" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding KeyOk}" Value="True">
+                                            <Setter Property="Foreground" Value="{StaticResource OkBrush}" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                        <TextBlock Style="{StaticResource Hint}" Margin="0,8,0,0" Text="A key is saved. Paste a new one only to replace it."
+                                   Visibility="{Binding HasSavedKey, Converter={StaticResource Vis}}" />
+
+                        <Border Margin="0,26,0,0" Style="{StaticResource Panel}">
+                            <StackPanel>
+                                <DockPanel>
+                                    <CheckBox DockPanel.Dock="Right" Style="{StaticResource Switch}" IsChecked="{Binding UseDeveloperLogin}" VerticalAlignment="Center" />
+                                    <TextBlock Style="{StaticResource SectionTitle}" Margin="0" VerticalAlignment="Center" Text="Make keys automatically (optional)" />
+                                </DockPanel>
+                                <TextBlock Style="{StaticResource Hint}" Margin="0,6,0,0"
+                                           Text="When your IP address changes, Clash Tracker can sign in to developer.clashofclans.com for you and make a key for the new address, the way the open-source coc.py library does. Your login is saved encrypted for your Windows account. Off unless you turn it on." />
+                                <StackPanel Margin="0,14,0,0" Visibility="{Binding UseDeveloperLogin, Converter={StaticResource Vis}}">
+                                    <TextBlock Style="{StaticResource Muted}" Text="Developer-site email" />
+                                    <TextBox Margin="0,4,0,10" Style="{StaticResource Input}" Text="{Binding DeveloperEmail, UpdateSourceTrigger=PropertyChanged}" />
+                                    <TextBlock Style="{StaticResource Muted}" Text="Password" />
+                                    <PasswordBox x:Name="DeveloperPassword" Margin="0,4,0,12" Style="{StaticResource Password}" />
+                                    <Button HorizontalAlignment="Left" Style="{StaticResource SecondaryButton}" Content="Sign in and make a key for this PC"
+                                            Command="{Binding MakeKeyCommand}" CommandParameter="{Binding ElementName=DeveloperPassword}" />
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+
+                    <!-- 3: accounts -->
+                    <StackPanel Visibility="{Binding IsStep3, Converter={StaticResource Vis}}">
+                        <TextBlock Style="{StaticResource PageTitle}" Text="Add your accounts" />
+                        <TextBlock Style="{StaticResource Body}" Margin="0,8,0,16"
+                                   Text="Enter the player tag shown under your name on your profile in the game. Add every account you want to track; Ctrl+1 to Ctrl+9 switch between them." />
+                        <w:AccountLookupPanel DataContext="{Binding Lookup}" />
+
+                        <TextBlock Style="{StaticResource SectionTitle}" Margin="0,24,0,8" Text="Added" Visibility="{Binding Accounts.Count, Converter={StaticResource Vis}}" />
+                        <ItemsControl ItemsSource="{Binding Accounts}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Style="{StaticResource Panel}" Padding="14,10" Margin="0,0,0,8">
+                                        <DockPanel>
+                                            <Button DockPanel.Dock="Right" Style="{StaticResource LinkButton}" VerticalAlignment="Center" Content="Remove"
+                                                    Command="{Binding DataContext.RemoveAccountCommand, RelativeSource={RelativeSource AncestorType=w:SetupWindow}}" CommandParameter="{Binding}" />
+                                            <TextBlock Style="{StaticResource Strong}" VerticalAlignment="Center" Text="{Binding Name, TargetNullValue='(name after the first sync)'}" />
+                                            <TextBlock Style="{StaticResource Muted}" Margin="10,0,0,0" VerticalAlignment="Center" Text="{Binding Tag}" />
+                                            <TextBlock Style="{StaticResource Muted}" Margin="10,0,0,0" VerticalAlignment="Center" Text="{Binding TownHall, StringFormat='TH{0}'}"
+                                                       Visibility="{Binding TownHall, Converter={StaticResource Vis}}" />
+                                        </DockPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <TextBlock Style="{StaticResource Hint}" Margin="0,6,0,0" Text="Add at least one account to continue." Visibility="{Binding Accounts.Count, Converter={StaticResource Vis}, ConverterParameter=not}" />
+                    </StackPanel>
+
+                    <!-- 4: import -->
+                    <StackPanel Visibility="{Binding IsStep4, Converter={StaticResource Vis}}">
+                        <TextBlock Style="{StaticResource PageTitle}" Text="Import your village" />
+                        <TextBlock Style="{StaticResource Body}" Margin="0,8,0,16"
+                                   Text="The API does not include building, trap or wall levels, so Clash Tracker reads them from the game's own data export." />
+                        <w:ImportPanel DataContext="{Binding Import}" />
+                        <TextBlock Style="{StaticResource Hint}" Margin="0,18,0,0"
+                                   Text="You can skip this and import later from the tray menu. Import again after a round of upgrades; in between, the overlay counts running timers down and you can mark finished upgrades by hand." />
+                    </StackPanel>
+                </Grid>
+            </ScrollViewer>
+        </DockPanel>
+    </Grid>
+</w:AppWindow>

@@ -1,10 +1,12 @@
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Documents;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using ClashOverlay.App.ViewModels;
 using ClashOverlay.App.Views;
+using ClashOverlay.App.Windows;
 using ClashOverlay.Core.Data;
 using Microsoft.Extensions.Logging;
 
@@ -49,6 +51,27 @@ internal static class ScreenshotRunner
         vm.IsAccountMenuOpen = false;
         vm.OnHidden();
 
+        // Setup, one picture per step.
+        var setupVm = new SetupViewModel(host, null);
+        var setup = Detach(new SetupWindow(setupVm), 900, 640);
+        for (var step = 1; step <= 4; step++)
+        {
+            setupVm.Step = step;
+            await Settle();
+            shots.Add(Save(setup, dir, $"setup-{step}.png"));
+        }
+
+        // Settings, one picture per page.
+        var actions = new SettingsActions { Preview = () => { }, OpenSetup = _ => { }, OpenImport = _ => { }, Confirm = (_, _) => false, OpenFolder = _ => { } };
+        using var settingsVm = new SettingsViewModel(host, null, actions);
+        var settings = Detach(new SettingsWindow(settingsVm), 960, 700);
+        foreach (var section in settingsVm.Sections)
+        {
+            settingsVm.Section = section;
+            await Settle();
+            shots.Add(Save(settings, dir, $"settings-{section.Key}.png"));
+        }
+
         host.Log.LogInformation("Screenshots written: {Files}", string.Join(", ", shots.Select(Path.GetFileName)));
     }
 
@@ -60,6 +83,34 @@ internal static class ScreenshotRunner
             await Dispatcher.Yield(DispatcherPriority.ApplicationIdle);
             await Task.Delay(30);
         }
+    }
+
+    /// <summary>
+    /// A window's content at the window's size, without showing the window (nothing appears on screen).
+    /// </summary>
+    private static Border Detach(Window window, double width, double height)
+    {
+        var content = (UIElement)window.Content;
+        var resources = window.Resources;
+        var dataContext = window.DataContext;
+        window.Content = null;
+        var app = Application.Current.Resources;
+        var root = new Border
+        {
+            Width = width,
+            Height = height,
+            Background = (Brush)app["WindowBrush"],
+            BorderBrush = (Brush)app["DividerBrush"],
+            BorderThickness = new Thickness(1),
+            DataContext = dataContext,
+            Child = content,
+            UseLayoutRounding = true,
+        };
+        root.Resources.MergedDictionaries.Add(resources);
+        TextElement.SetFontFamily(root, (FontFamily)app["Inter"]);
+        TextElement.SetFontSize(root, 13);
+        TextElement.SetForeground(root, (Brush)app["TextBrush"]);
+        return root;
     }
 
     /// <summary>The element on a dark, game-neutral backdrop with some margin.</summary>

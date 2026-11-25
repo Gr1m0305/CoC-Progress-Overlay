@@ -146,6 +146,12 @@ internal static partial class NativeMethods
     [LibraryImport("dwmapi.dll", EntryPoint = "DwmGetWindowAttribute")]
     public static partial int DwmGetWindowAttributeInt(IntPtr hwnd, int attribute, out int value, int size);
 
+    /// <summary>DWMWA_USE_IMMERSIVE_DARK_MODE: a dark title bar for the app's normal windows.</summary>
+    public const int DWMWA_USE_IMMERSIVE_DARK_MODE = 20;
+
+    [LibraryImport("dwmapi.dll")]
+    public static partial int DwmSetWindowAttribute(IntPtr hwnd, int attribute, ref int value, int size);
+
     public static long GetExStyle(IntPtr hwnd) =>
         IntPtr.Size == 8 ? GetWindowLongPtr64(hwnd, GWL_EXSTYLE).ToInt64() : GetWindowLong32(hwnd, GWL_EXSTYLE);
 

@@ -51,6 +51,7 @@ internal sealed class AppHost : IDisposable
         Data = new GameDataService(Paths.Data, _dataHttp, Loggers);
         Images = new ImageCache(new AssetResolver(Paths.Assets), Loggers.CreateLogger("Images"));
         Keys = new ApiKeyStore(Paths.ApiKeyFile);
+        Logins = new DeveloperLoginStore(Paths.DeveloperLoginFile);
         PublicIp = new PublicIpService(_dataHttp);
 
         _apiHttp = ClashApiClient.CreateHttpClient(Version);
@@ -59,6 +60,7 @@ internal sealed class AppHost : IDisposable
             : new ClashApiClient(_apiHttp, () => Keys.Load(), new ResponseCache(Paths.Cache), Time, Loggers.CreateLogger<ClashApiClient>());
         Store = new AccountStore(Paths, Loggers.CreateLogger("Accounts"), options.Demo ? DemoData.Exports() : null);
         Loader = new AccountLoader(Data, Api, Store, () => Settings, Time, Loggers.CreateLogger("AccountLoader"));
+        Content = new ContentUpdater(this);
     }
 
     public StartupOptions Options { get; }
@@ -84,6 +86,11 @@ internal sealed class AppHost : IDisposable
     public ImageCache Images { get; }
 
     public ApiKeyStore Keys { get; }
+
+    /// <summary>The optional developer-site login for automatic keys (DPAPI, off unless the user turns it on).</summary>
+    public DeveloperLoginStore Logins { get; }
+
+    public ContentUpdater Content { get; }
 
     public PublicIpService PublicIp { get; }
 

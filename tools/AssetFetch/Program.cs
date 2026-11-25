@@ -11,9 +11,6 @@ namespace ClashOverlay.AssetFetch;
 /// </summary>
 internal static class Program
 {
-    /// <summary>Whole CDN folders the overlay can use (named by the API, not by the static data).</summary>
-    public static readonly string[] ExtraFolders = ["player_labels"];
-
     private static async Task<int> Main(string[] args)
     {
         var dataDir = Arg(args, "--data") ?? AppPaths.Default.Data;
@@ -56,7 +53,7 @@ internal static class Program
                 }
             });
 
-            var result = await fetcher.RunAsync(wanted, ExtraFolders, force, progress).ConfigureAwait(false);
+            var result = await fetcher.RunAsync(wanted, AssetFetcher.ExtraFolders, force, progress).ConfigureAwait(false);
             Console.WriteLine($"Images: {result.Summary}. Saved in {outDir}");
             if (args.Contains("--list-missing"))
             {

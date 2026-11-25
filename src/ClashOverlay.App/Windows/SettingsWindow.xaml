@@ -1,0 +1,452 @@
+<w:AppWindow x:Class="ClashOverlay.App.Windows.SettingsWindow" x:ClassModifier="internal"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:w="clr-namespace:ClashOverlay.App.Windows"
+             xmlns:v="clr-namespace:ClashOverlay.App.Views"
+             Title="Clash Tracker settings" Width="960" Height="700" MinWidth="800" MinHeight="560">
+    <Window.Resources>
+        <v:VisibleIf x:Key="Vis" />
+        <Style x:Key="Row" TargetType="Grid">
+            <Setter Property="Margin" Value="0,0,0,18" />
+        </Style>
+        <Style x:Key="SwitchRow" TargetType="DockPanel">
+            <Setter Property="Margin" Value="0,0,0,14" />
+        </Style>
+        <Style x:Key="Result" TargetType="TextBlock" BasedOn="{StaticResource Body}">
+            <Setter Property="Foreground" Value="{StaticResource ProblemBrush}" />
+        </Style>
+    </Window.Resources>
+
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="220" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+
+        <Border Background="{StaticResource SidebarBrush}" BorderBrush="{StaticResource DividerBrush}" BorderThickness="0,0,1,0">
+            <DockPanel Margin="14,22,14,18">
+                <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="6,0,0,20">
+                    <Image Source="pack://application:,,,/Assets/app.ico" Width="24" Height="24" RenderOptions.BitmapScalingMode="HighQuality" />
+                    <TextBlock Margin="10,0,0,0" VerticalAlignment="Center" Style="{StaticResource Strong}" FontSize="15" Text="Settings" />
+                </StackPanel>
+                <Button DockPanel.Dock="Bottom" HorizontalAlignment="Stretch" Style="{StaticResource SecondaryButton}" Content="Preview with demo data" Command="{Binding PreviewCommand}" />
+                <ListBox ItemsSource="{Binding Sections}" SelectedItem="{Binding Section, Mode=TwoWay}" DisplayMemberPath="Title" Background="Transparent" BorderThickness="0"
+                         ItemContainerStyle="{StaticResource NavItem}" ScrollViewer.HorizontalScrollBarVisibility="Disabled" />
+            </DockPanel>
+        </Border>
+
+        <DockPanel Grid.Column="1">
+            <Border DockPanel.Dock="Bottom" BorderBrush="{StaticResource DividerBrush}" BorderThickness="0,1,0,0" Padding="28,12">
+                <DockPanel>
+                    <Button DockPanel.Dock="Right" Style="{StaticResource PrimaryButton}" MinWidth="90" Content="Done" Click="OnDone" />
+                    <TextBlock VerticalAlignment="Center" Style="{StaticResource Hint}" Margin="0" Text="Changes are saved and applied as you make them." />
+                </DockPanel>
+            </Border>
+
+            <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="32,24,32,24">
+                <Grid MaxWidth="680" HorizontalAlignment="Left">
+
+                    <!-- ============ Overlay ============ -->
+                    <StackPanel Visibility="{Binding IsOverlayPage, Converter={StaticResource Vis}}">
+                        <TextBlock Style="{StaticResource PageTitle}" Margin="0,0,0,20" Text="Overlay" />
+
+                        <Grid Style="{StaticResource Row}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="170" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Style="{StaticResource RowLabel}" Text="Position" />
+                            <Border Grid.Column="1" Style="{StaticResource Segments}">
+                                <StackPanel Orientation="Horizontal">
+                                    <RadioButton Style="{StaticResource Segment}" GroupName="Place" Content="Centre on the game's screen" IsChecked="{Binding PlaceOnGameMonitor}" />
+                                    <RadioButton Style="{StaticResource Segment}" GroupName="Place" Content="Over the game window" IsChecked="{Binding PlaceOverGame}" />
+                                </StackPanel>
+                            </Border>
+                        </Grid>
+
+                        <Grid Style="{StaticResource Row}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="170" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="56" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Style="{StaticResource RowLabel}" Text="Size" />
+                            <Slider Grid.Column="1" Style="{StaticResource FormSlider}" Minimum="0.75" Maximum="1.5" Value="{Binding Scale}" SmallChange="0.05" LargeChange="0.1" />
+                            <TextBlock Grid.Column="2" Style="{StaticResource Strong}" HorizontalAlignment="Right" VerticalAlignment="Center" Text="{Binding ScaleText}" />
+                        </Grid>
+
+                        <Grid Style="{StaticResource Row}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="170" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="56" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Style="{StaticResource RowLabel}" Text="Opacity" />
+                            <Slider Grid.Column="1" Style="{StaticResource FormSlider}" Minimum="0.5" Maximum="1" Value="{Binding PanelOpacity}" SmallChange="0.02" LargeChange="0.1" />
+                            <TextBlock Grid.Column="2" Style="{StaticResource Strong}" HorizontalAlignment="Right" VerticalAlignment="Center" Text="{Binding OpacityText}" />
+                        </Grid>
+
+                        <Grid Style="{StaticResource Row}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="170" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Style="{StaticResource RowLabel}" VerticalAlignment="Top" Margin="0,6,16,0" Text="Progress counts" />
+                            <StackPanel Grid.Column="1">
+                                <Border Style="{StaticResource Segments}">
+                                    <StackPanel Orientation="Horizontal">
+                                        <RadioButton Style="{StaticResource Segment}" GroupName="Progress" Content="Levels" IsChecked="{Binding ProgressByLevels}" />
+                                        <RadioButton Style="{StaticResource Segment}" GroupName="Progress" Content="Time" IsChecked="{Binding ProgressByTime}" />
+                                    </StackPanel>
+                                </Border>
+                                <TextBlock Style="{StaticResource Hint}" Text="Levels counts every level as one step. Time weighs each level by how long it takes to upgrade." />
+                            </StackPanel>
+                        </Grid>
+
+                        <Grid Style="{StaticResource Row}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="170" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Style="{StaticResource RowLabel}" VerticalAlignment="Top" Margin="0,6,16,0" Text="Numbers" />
+                            <StackPanel Grid.Column="1">
+                                <Border Style="{StaticResource Segments}">
+                                    <StackPanel Orientation="Horizontal">
+                                        <RadioButton Style="{StaticResource Segment}" GroupName="Numbers" Content="{Binding CompactExample}" IsChecked="{Binding NumbersCompact}" />
+                                        <RadioButton Style="{StaticResource Segment}" GroupName="Numbers" Content="{Binding FullExample}" IsChecked="{Binding NumbersFull}" />
+                                    </StackPanel>
+                                </Border>
+                                <TextBlock Style="{StaticResource Hint}" Text="Written the same way whatever language Windows uses." />
+                            </StackPanel>
+                        </Grid>
+
+                        <Grid Style="{StaticResource Row}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="170" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Style="{StaticResource RowLabel}" VerticalAlignment="Top" Margin="0,6,16,0" Text="Builders" />
+                            <StackPanel Grid.Column="1">
+                                <StackPanel Orientation="Horizontal">
+                                    <Border Style="{StaticResource Segments}">
+                                        <StackPanel Orientation="Horizontal">
+                                            <RadioButton Style="{StaticResource Segment}" GroupName="Builders" Content="From the export" IsChecked="{Binding BuildersFromGame}" />
+                                            <RadioButton Style="{StaticResource Segment}" GroupName="Builders" Content="Fixed number" IsChecked="{Binding BuildersFixed}" />
+                                        </StackPanel>
+                                    </Border>
+                                    <Border Margin="10,0,0,0" Style="{StaticResource Segments}" Visibility="{Binding BuildersFixed, Converter={StaticResource Vis}}">
+                                        <ListBox Style="{StaticResource SegmentList}" ItemsSource="{Binding BuilderChoices}" SelectedItem="{Binding BuildersCount}" />
+                                    </Border>
+                                </StackPanel>
+                                <TextBlock Style="{StaticResource Hint}"
+                                           Text="Used to work out when all upgrades could be finished. Set a number only if the count from your village is wrong for you." />
+                            </StackPanel>
+                        </Grid>
+
+                        <DockPanel Style="{StaticResource SwitchRow}">
+                            <CheckBox DockPanel.Dock="Right" Style="{StaticResource Switch}" IsChecked="{Binding HideWhenGameMinimised}" />
+                            <TextBlock Style="{StaticResource Body}" VerticalAlignment="Center" Text="Hide the overlay when the game is minimised or closed" />
+                        </DockPanel>
+                        <DockPanel Style="{StaticResource SwitchRow}">
+                            <CheckBox DockPanel.Dock="Right" Style="{StaticResource Switch}" IsChecked="{Binding ShowDetectionToast}" />
+                            <TextBlock Style="{StaticResource Body}" VerticalAlignment="Center" Text="Show a notification when the game is found" />
+                        </DockPanel>
+                    </StackPanel>
+
+                    <!-- ============ Hotkeys ============ -->
+                    <StackPanel Visibility="{Binding IsHotkeysPage, Converter={StaticResource Vis}}">
+                        <TextBlock Style="{StaticResource PageTitle}" Text="Hotkeys" />
+                        <TextBlock Style="{StaticResource Body}" Margin="0,8,0,20" Text="Click a box and press the keys you want. Backspace clears a box." />
+
+                        <Grid Style="{StaticResource Row}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="170" />
+                                <ColumnDefinition Width="220" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Style="{StaticResource RowLabel}" Text="Show / hide" />
+                            <v:HotkeyBox Grid.Column="1" Style="{StaticResource Input}" Text="{Binding ToggleKey, UpdateSourceTrigger=PropertyChanged}" />
+                            <TextBlock Grid.Column="2" Margin="12,0,0,0" Style="{StaticResource Hint}" VerticalAlignment="Center" Text="While the game or the overlay is in front" />
+                        </Grid>
+                        <Grid Style="{StaticResource Row}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="170" />
+                                <ColumnDefinition Width="220" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Style="{StaticResource RowLabel}" Text="Switch village" />
+                            <v:HotkeyBox Grid.Column="1" Style="{StaticResource Input}" Tag="Not set" Text="{Binding SwitchVillageKey, UpdateSourceTrigger=PropertyChanged}" />
+                            <TextBlock Grid.Column="2" Margin="12,0,0,0" Style="{StaticResource Hint}" VerticalAlignment="Center" Text="Main Village and Builder Base" />
+                        </Grid>
+                        <Grid Style="{StaticResource Row}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="170" />
+                                <ColumnDefinition Width="220" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Style="{StaticResource RowLabel}" Text="Next account" />
+                            <v:HotkeyBox Grid.Column="1" Style="{StaticResource Input}" Tag="Not set" Text="{Binding NextAccountKey, UpdateSourceTrigger=PropertyChanged}" />
+                        </Grid>
+                        <Grid Style="{StaticResource Row}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="170" />
+                                <ColumnDefinition Width="220" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Style="{StaticResource RowLabel}" Text="Close" />
+                            <v:HotkeyBox Grid.Column="1" Style="{StaticResource Input}" Tag="Not set" Text="{Binding CloseKey, UpdateSourceTrigger=PropertyChanged}" />
+                        </Grid>
+                        <Grid Style="{StaticResource Row}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="170" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Style="{StaticResource RowLabel}" VerticalAlignment="Top" Margin="0,6,16,0" Text="Jump to account" />
+                            <StackPanel Grid.Column="1">
+                                <Border Style="{StaticResource Segments}">
+                                    <ListBox Style="{StaticResource SegmentList}" ItemsSource="{Binding ModifierChoices}" SelectedItem="{Binding AccountModifier}" DisplayMemberPath="Label" />
+                                </Border>
+                                <TextBlock Style="{StaticResource Hint}" Text="The accounts in the order of the Accounts page." />
+                            </StackPanel>
+                        </Grid>
+
+                        <TextBlock Style="{StaticResource Result}" Margin="0,0,0,14" Text="{Binding HotkeyProblems}" Visibility="{Binding HotkeyProblems, Converter={StaticResource Vis}}" />
+                        <TextBlock Style="{StaticResource Hint}" Margin="0,0,0,14"
+                                   Text="Clash Tracker only claims these keys while the game or the overlay is in front, and the overlay's keys only while it is open, so other apps keep their shortcuts." />
+                        <Button HorizontalAlignment="Left" Style="{StaticResource SecondaryButton}" Content="Reset to defaults" Command="{Binding ResetHotkeysCommand}" />
+                    </StackPanel>
+
+                    <!-- ============ Accounts ============ -->
+                    <StackPanel Visibility="{Binding IsAccountsPage, Converter={StaticResource Vis}}">
+                        <TextBlock Style="{StaticResource PageTitle}" Text="Accounts" />
+                        <TextBlock Style="{StaticResource Body}" Margin="0,8,0,18" Text="The order here is the order of the account switcher and of the number keys." />
+                        <ItemsControl ItemsSource="{Binding Accounts}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Style="{StaticResource Panel}" Margin="0,0,0,10">
+                                        <StackPanel>
+                                            <DockPanel>
+                                                <Border DockPanel.Dock="Left" Width="26" Height="26" CornerRadius="13" Background="{StaticResource InputBrush}" Margin="0,0,12,0" VerticalAlignment="Center">
+                                                    <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Style="{StaticResource Strong}" FontSize="12" Text="{Binding Number}" />
+                                                </Border>
+                                                <TextBox DockPanel.Dock="Right" Width="190" Style="{StaticResource Input}" Tag="Nickname (optional)" VerticalAlignment="Center"
+                                                         Text="{Binding Nickname, UpdateSourceTrigger=PropertyChanged}" />
+                                                <StackPanel VerticalAlignment="Center" Margin="0,0,12,0">
+                                                    <TextBlock Style="{StaticResource Strong}" FontSize="14" Text="{Binding Title}" />
+                                                    <TextBlock Style="{StaticResource Muted}" Margin="0,3,0,0" Text="{Binding Detail}" TextWrapping="Wrap" />
+                                                </StackPanel>
+                                            </DockPanel>
+                                            <WrapPanel Margin="38,12,0,0">
+                                                <Button Style="{StaticResource SecondaryButton}" Margin="0,0,8,0" Content="Import export…" Command="{Binding ImportCommand}" />
+                                                <Button Style="{StaticResource SecondaryButton}" Margin="0,0,8,0" Content="Clear manual changes" Command="{Binding ClearEditsCommand}" />
+                                                <Button Style="{StaticResource SecondaryButton}" Margin="0,0,8,0" Content="Move up" Command="{Binding MoveUpCommand}" />
+                                                <Button Style="{StaticResource DangerButton}" Content="Remove…" Command="{Binding RemoveCommand}" />
+                                            </WrapPanel>
+                                        </StackPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <TextBlock Style="{StaticResource Hint}" Margin="0,0,0,10" Text="No accounts yet." Visibility="{Binding Accounts.Count, Converter={StaticResource Vis}, ConverterParameter=not}" />
+
+                        <TextBlock Style="{StaticResource SectionTitle}" Margin="0,16,0,10" Text="Add an account" />
+                        <w:AccountLookupPanel DataContext="{Binding Lookup}" />
+                    </StackPanel>
+
+                    <!-- ============ API key ============ -->
+                    <StackPanel Visibility="{Binding IsKeyPage, Converter={StaticResource Vis}}">
+                        <TextBlock Style="{StaticResource PageTitle}" Text="API key" />
+                        <TextBlock Style="{StaticResource Body}" Margin="0,8,0,18"
+                                   Text="Your own key for the official Clash of Clans API, saved encrypted for your Windows account. It is never written to the log." />
+                        <Border Style="{StaticResource Panel}">
+                            <StackPanel>
+                                <TextBlock Style="{StaticResource Strong}" FontSize="14" FontFamily="Consolas" Text="{Binding KeyStatus}" />
+                                <TextBlock Style="{StaticResource Muted}" Margin="0,6,0,0" Text="{Binding KeyAddresses}" Visibility="{Binding KeyAddresses, Converter={StaticResource Vis}}" />
+                                <TextBlock Margin="0,6,0,0" Text="{Binding IpStatus}" Visibility="{Binding IpStatus, Converter={StaticResource Vis}}">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock" BasedOn="{StaticResource Body}">
+                                            <Setter Property="Foreground" Value="{StaticResource SubtleTextBrush}" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IpAllowed}" Value="False">
+                                                    <Setter Property="Foreground" Value="{StaticResource ProblemBrush}" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                                <WrapPanel Margin="0,14,0,0">
+                                    <Button Style="{StaticResource SecondaryButton}" Margin="0,0,8,0" Content="Test again" Command="{Binding RetestKeyCommand}" />
+                                    <Button Style="{StaticResource PrimaryButton}" Margin="0,0,8,0" Content="Make or paste a new key…" Command="{Binding ReplaceKeyCommand}" />
+                                    <Button Style="{StaticResource DangerButton}" Content="Remove key…" Command="{Binding RemoveKeyCommand}" Visibility="{Binding HasKey, Converter={StaticResource Vis}}" />
+                                </WrapPanel>
+                                <TextBlock Margin="0,10,0,0" Text="{Binding KeyTestResult}" Visibility="{Binding KeyTestResult, Converter={StaticResource Vis}}">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock" BasedOn="{StaticResource Body}">
+                                            <Setter Property="Foreground" Value="{StaticResource ProblemBrush}" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding KeyTestOk}" Value="True">
+                                                    <Setter Property="Foreground" Value="{StaticResource OkBrush}" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Style="{StaticResource Panel}" Margin="0,16,0,0">
+                            <StackPanel>
+                                <DockPanel>
+                                    <CheckBox DockPanel.Dock="Right" Style="{StaticResource Switch}" IsChecked="{Binding AutoKey}" IsEnabled="{Binding CanChangeSystem}" />
+                                    <TextBlock Style="{StaticResource SectionTitle}" Margin="0" VerticalAlignment="Center" Text="Make a new key when my IP address changes" />
+                                </DockPanel>
+                                <TextBlock Style="{StaticResource Hint}" Margin="0,6,0,0"
+                                           Text="Signs in to developer.clashofclans.com with your saved login and makes a key for the new address, the way the open-source coc.py library does. The login is saved encrypted for your Windows account. Turning this off deletes it." />
+                                <DockPanel Margin="0,12,0,0" Visibility="{Binding AutoKey, Converter={StaticResource Vis}}">
+                                    <Button DockPanel.Dock="Right" Style="{StaticResource SecondaryButton}" Content="Enter login…" Command="{Binding EnterLoginCommand}" />
+                                    <TextBlock Style="{StaticResource Body}" VerticalAlignment="Center" Text="{Binding LoginStatus}" />
+                                </DockPanel>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+
+                    <!-- ============ Game detection ============ -->
+                    <StackPanel Visibility="{Binding IsDetectionPage, Converter={StaticResource Vis}}">
+                        <TextBlock Style="{StaticResource PageTitle}" Text="Game detection" />
+                        <TextBlock Style="{StaticResource Body}" Margin="0,8,0,18"
+                                   Text="Clash Tracker finds the game by its window: the program's name and the window title. It reads nothing else from the game and never sends it input." />
+                        <Border Style="{StaticResource Panel}">
+                            <StackPanel>
+                                <TextBlock Style="{StaticResource Strong}" TextWrapping="Wrap" TextTrimming="None" Text="{Binding DetectionStatus}" />
+                                <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
+                                    <Button Style="{StaticResource PrimaryButton}" Content="Pick game window" Command="{Binding PickWindowCommand}" />
+                                    <TextBlock Margin="12,0,0,0" VerticalAlignment="Center" Style="{StaticResource Hint}" Text="Press, then click the game's window." />
+                                </StackPanel>
+                                <TextBlock Margin="0,10,0,0" Style="{StaticResource Body}" Text="{Binding PickStatus}" Visibility="{Binding PickStatus, Converter={StaticResource Vis}}" />
+                            </StackPanel>
+                        </Border>
+
+                        <TextBlock Style="{StaticResource SectionTitle}" Margin="0,22,0,8" Text="Rules" />
+                        <Grid Margin="0,0,0,6">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="56" />
+                                <ColumnDefinition Width="2*" />
+                                <ColumnDefinition Width="1.4*" />
+                                <ColumnDefinition Width="2*" />
+                                <ColumnDefinition Width="64" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Style="{StaticResource Muted}" Text="On" />
+                            <TextBlock Grid.Column="1" Style="{StaticResource Muted}" Text="Name" />
+                            <TextBlock Grid.Column="2" Style="{StaticResource Muted}" Margin="8,0,0,0" Text="Program" />
+                            <TextBlock Grid.Column="3" Style="{StaticResource Muted}" Margin="8,0,0,0" Text="Window title" />
+                        </Grid>
+                        <ItemsControl ItemsSource="{Binding Rules}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid Margin="0,0,0,6">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="56" />
+                                            <ColumnDefinition Width="2*" />
+                                            <ColumnDefinition Width="1.4*" />
+                                            <ColumnDefinition Width="2*" />
+                                            <ColumnDefinition Width="64" />
+                                        </Grid.ColumnDefinitions>
+                                        <CheckBox Style="{StaticResource Switch}" VerticalAlignment="Center" HorizontalAlignment="Left" IsChecked="{Binding Enabled}" />
+                                        <TextBox Grid.Column="1" Style="{StaticResource Input}" Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}" />
+                                        <TextBox Grid.Column="2" Margin="8,0,0,0" Style="{StaticResource Input}" Tag="any" Text="{Binding ProcessName, UpdateSourceTrigger=PropertyChanged}" />
+                                        <TextBox Grid.Column="3" Margin="8,0,0,0" Style="{StaticResource Input}" Tag="any" Text="{Binding TitlePattern, UpdateSourceTrigger=PropertyChanged}" />
+                                        <Button Grid.Column="4" HorizontalAlignment="Right" VerticalAlignment="Center" Style="{StaticResource LinkButton}" Content="Remove"
+                                                Command="{Binding DataContext.RemoveRuleCommand, RelativeSource={RelativeSource AncestorType=w:SettingsWindow}}" CommandParameter="{Binding}" />
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <TextBlock Style="{StaticResource Hint}" Margin="0,4,0,12"
+                                   Text="Program is the .exe name without .exe. In the window title, * stands for any text and ? for one character. Leave one of them empty to match anything." />
+                        <StackPanel Orientation="Horizontal">
+                            <Button Style="{StaticResource SecondaryButton}" Content="Add rule" Command="{Binding AddRuleCommand}" />
+                            <Button Style="{StaticResource SecondaryButton}" Margin="8,0,0,0" Content="Reset to built-in rules…" Command="{Binding ResetRulesCommand}" />
+                        </StackPanel>
+                    </StackPanel>
+
+                    <!-- ============ Data and updates ============ -->
+                    <StackPanel Visibility="{Binding IsDataPage, Converter={StaticResource Vis}}">
+                        <TextBlock Style="{StaticResource PageTitle}" Margin="0,0,0,18" Text="Data and updates" />
+                        <Border Style="{StaticResource Panel}">
+                            <StackPanel>
+                                <TextBlock Style="{StaticResource Body}" Text="{Binding DataStatus}" />
+                                <TextBlock Style="{StaticResource Body}" Margin="0,6,0,0" Text="{Binding ImagesStatus}" />
+                                <StackPanel Orientation="Horizontal" Margin="0,14,0,0">
+                                    <Button Style="{StaticResource PrimaryButton}" Content="Check for data and image updates" Command="{Binding UpdateContentCommand}" />
+                                </StackPanel>
+                                <TextBlock Margin="0,10,0,0" Text="{Binding UpdateStatus}" Visibility="{Binding UpdateStatus, Converter={StaticResource Vis}}">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock" BasedOn="{StaticResource Body}">
+                                            <Setter Property="Foreground" Value="{StaticResource ProblemBrush}" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding UpdateOk}" Value="True">
+                                                    <Setter Property="Foreground" Value="{StaticResource SubtleTextBrush}" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                                <TextBlock Style="{StaticResource Hint}" Margin="0,12,0,0"
+                                           Text="Game data and images come from the ClashKing project and are downloaded to this PC when needed. None of them are part of Clash Tracker itself." />
+                            </StackPanel>
+                        </Border>
+
+                        <DockPanel Style="{StaticResource SwitchRow}" Margin="0,22,0,4">
+                            <CheckBox DockPanel.Dock="Right" Style="{StaticResource Switch}" IsChecked="{Binding CheckForUpdates}" />
+                            <TextBlock Style="{StaticResource Body}" VerticalAlignment="Center" Text="Tell me when a new version of Clash Tracker is out" />
+                        </DockPanel>
+                        <TextBlock Style="{StaticResource Hint}" Margin="0,0,0,16" Text="Checks GitHub at most once a day. Nothing is downloaded or installed for you." />
+
+                        <DockPanel Style="{StaticResource SwitchRow}" Margin="0,0,0,4">
+                            <CheckBox DockPanel.Dock="Right" Style="{StaticResource Switch}" IsChecked="{Binding StartWithWindows}" IsEnabled="{Binding CanChangeSystem}" />
+                            <TextBlock Style="{StaticResource Body}" VerticalAlignment="Center" Text="Start Clash Tracker when I sign in to Windows" />
+                        </DockPanel>
+                        <TextBlock Style="{StaticResource Hint}" Margin="0,0,0,4" Text="It starts quietly in the notification area." />
+                        <TextBlock Style="{StaticResource Result}" Margin="0,4,0,0" Text="{Binding StartupNote}" Visibility="{Binding StartupNote, Converter={StaticResource Vis}}" />
+
+                        <StackPanel Orientation="Horizontal" Margin="0,22,0,0">
+                            <Button Style="{StaticResource SecondaryButton}" Content="Open data folder" Command="{Binding OpenDataFolderCommand}" />
+                            <Button Style="{StaticResource SecondaryButton}" Margin="8,0,0,0" Content="Open log folder" Command="{Binding OpenLogsCommand}" />
+                        </StackPanel>
+                    </StackPanel>
+
+                    <!-- ============ About ============ -->
+                    <StackPanel Visibility="{Binding IsAboutPage, Converter={StaticResource Vis}}">
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
+                            <Image Source="pack://application:,,,/Assets/app.ico" Width="48" Height="48" RenderOptions.BitmapScalingMode="HighQuality" />
+                            <StackPanel Margin="14,0,0,0" VerticalAlignment="Center">
+                                <TextBlock Style="{StaticResource PageTitle}" Text="Clash Tracker" />
+                                <TextBlock Style="{StaticResource Muted}" Margin="0,2,0,0" Text="{Binding VersionText}" />
+                            </StackPanel>
+                        </StackPanel>
+                        <TextBlock Style="{StaticResource Body}"
+                                   Text="An overlay that shows what is left to upgrade in Clash of Clans. Free and open source under the MIT licence." />
+                        <Button Margin="0,8,0,0" HorizontalAlignment="Left" Style="{StaticResource LinkButton}" Content="{Binding RepositoryUrl}"
+                                Command="{Binding OpenLinkCommand}" CommandParameter="{Binding RepositoryUrl}" Visibility="{Binding RepositoryUrl, Converter={StaticResource Vis}}" />
+
+                        <TextBlock Style="{StaticResource SectionTitle}" Margin="0,22,0,6" Text="Where the data comes from" />
+                        <TextBlock Style="{StaticResource Body}" Text="Player, clan and war data: the official Clash of Clans API, with your own key." />
+                        <TextBlock Style="{StaticResource Body}" Margin="0,6,0,0" Text="Building, trap and wall levels: the game's own data export, which you copy in the game." />
+                        <TextBlock Style="{StaticResource Body}" Margin="0,6,0,0" Text="Upgrade costs, times and images: the ClashKing project (GPL-3.0), downloaded when needed." />
+                        <Button Margin="0,4,0,0" HorizontalAlignment="Left" Style="{StaticResource LinkButton}" Content="github.com/ClashKingInc/ClashKingAssets"
+                                Command="{Binding OpenLinkCommand}" CommandParameter="https://github.com/ClashKingInc/ClashKingAssets" />
+                        <TextBlock Style="{StaticResource Body}" Margin="0,10,0,0" Text="Font: Inter by Rasmus Andersson, under the SIL Open Font License 1.1." />
+
+                        <TextBlock Style="{StaticResource SectionTitle}" Margin="0,22,0,6" Text="Fan content" />
+                        <TextBlock Style="{StaticResource Body}"
+                                   Text="This material is unofficial and is not endorsed by Supercell. For more information see Supercell's Fan Content Policy." />
+                        <Button Margin="0,4,0,0" HorizontalAlignment="Left" Style="{StaticResource LinkButton}" Content="www.supercell.com/fan-content-policy"
+                                Command="{Binding OpenLinkCommand}" CommandParameter="https://www.supercell.com/fan-content-policy" />
+                        <TextBlock Style="{StaticResource Body}" Margin="0,10,0,0"
+                                   Text="Clash Tracker is not affiliated with, endorsed, sponsored or approved by Supercell. Clash of Clans and its artwork are trademarks and copyright of Supercell." />
+                    </StackPanel>
+                </Grid>
+            </ScrollViewer>
+        </DockPanel>
+    </Grid>
+</w:AppWindow>
