@@ -18,10 +18,8 @@ TestResults/
 *.userprefs
 *.DotSettings.user
 
-# ---- Local tooling and working notes ----
-.claude/
+# ---- Local working notes ----
 PROGRESS.md
-CLAUDE.local.md
 
 # ---- Secrets: API keys, credentials, environment files ----
 .env
