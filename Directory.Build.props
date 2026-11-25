@@ -1,0 +1,42 @@
+<Project>
+  <PropertyGroup>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Deterministic>true</Deterministic>
+    <Company>Gr1m</Company>
+    <Product>Clash Tracker</Product>
+    <Copyright>Copyright (c) 2026 Gr1m</Copyright>
+    <!-- .NET 8 is the target; a newer SDK builds it fine. -->
+    <CheckEolTargetFramework>false</CheckEolTargetFramework>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+  </PropertyGroup>
+
+  <!--
+    One version source. Release builds pass -p:ClashVersion=X.Y.Z (taken from the vX.Y.Z git tag);
+    everything else is 0.0.0-dev. The assembly, file and informational versions, the About box and
+    the installer's AppVersion all come from this one property.
+  -->
+  <PropertyGroup>
+    <ClashVersion Condition="'$(ClashVersion)' == ''">0.0.0-dev</ClashVersion>
+    <ClashVersionNumber>$([System.Text.RegularExpressions.Regex]::Match('$(ClashVersion)', '^\d+\.\d+\.\d+').Value)</ClashVersionNumber>
+    <ClashVersionNumber Condition="'$(ClashVersionNumber)' == ''">0.0.0</ClashVersionNumber>
+    <Version>$(ClashVersion)</Version>
+    <AssemblyVersion>$(ClashVersionNumber).0</AssemblyVersion>
+    <FileVersion>$(ClashVersionNumber).0</FileVersion>
+    <InformationalVersion>$(ClashVersion)</InformationalVersion>
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+    <!-- owner/repo for the update check: GitHub Actions sets GITHUB_REPOSITORY. -->
+    <ClashGitHubRepository Condition="'$(ClashGitHubRepository)' == ''">$(GITHUB_REPOSITORY)</ClashGitHubRepository>
+    <ClashGitHubRepository Condition="'$(ClashGitHubRepository)' == ''">Gr1m0305/CoC-Progress-Overlay</ClashGitHubRepository>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <AssemblyMetadata Include="GitHubRepository" Value="$(ClashGitHubRepository)" />
+  </ItemGroup>
+
+  <!-- Release builds carry their symbols inside the dll/exe, so the single-file publish stays one file. -->
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <DebugType>embedded</DebugType>
+  </PropertyGroup>
+</Project>

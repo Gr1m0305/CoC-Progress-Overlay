@@ -1,0 +1,60 @@
+# ---- Build output ----
+bin/
+obj/
+publish/
+artifacts/
+installer/Output/
+installer/output/
+TestResults/
+*.nupkg
+
+# ---- IDE / editor ----
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+*.userprefs
+*.DotSettings.user
+
+# ---- Local tooling and working notes ----
+.claude/
+PROGRESS.md
+CLAUDE.local.md
+
+# ---- Secrets: API keys, credentials, environment files ----
+.env
+.env.*
+*.pfx
+*.p12
+*.snk
+apikey*.bin
+devsite*.bin
+secrets.json
+
+# ---- Runtime data (lives in %LOCALAPPDATA%\ClashOverlay, never in the repo) ----
+/logs/
+*.log
+settings.json
+/cache/
+/data/
+/assets/
+# Downloaded ClashKing static data or Supercell artwork, wherever it lands
+static_data/
+*.webp
+/manifest.json
+assets_manifest.json
+# Real village exports (anonymised fixtures under tests/fixtures are allowed)
+export*.json
+village*.json
+!tests/fixtures/**/*.json
+
+# ---- Mockups and scratch ----
+mockups/
+*mockup*.png
+*.bak
+*.orig
+*.tmp
+*.temp
+~$*
+scratch/

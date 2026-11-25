@@ -1,0 +1,48 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <!-- WinForms is used for the tray icon only. -->
+    <UseWindowsForms>true</UseWindowsForms>
+    <AssemblyName>ClashOverlay</AssemblyName>
+    <RootNamespace>ClashOverlay.App</RootNamespace>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Assets\app.ico</ApplicationIcon>
+    <!-- LibraryImport source generator in Native/. -->
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <NoWarn>$(NoWarn);WFAC010</NoWarn>
+  </PropertyGroup>
+
+  <!-- Keep WinForms and System.Drawing types out of the implicit usings (name clashes with WPF). -->
+  <ItemGroup>
+    <Using Remove="System.Windows.Forms" />
+    <Using Remove="System.Drawing" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
+    <PackageReference Include="Serilog" Version="4.2.0" />
+    <PackageReference Include="Serilog.Sinks.File" Version="6.0.0" />
+    <PackageReference Include="Serilog.Extensions.Logging" Version="9.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ClashOverlay.Core\ClashOverlay.Core.csproj" />
+    <ProjectReference Include="..\ClashOverlay.Api\ClashOverlay.Api.csproj" />
+    <ProjectReference Include="..\..\tools\AssetFetch\AssetFetch.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="ClashOverlay.Tests" />
+  </ItemGroup>
+
+  <!-- Bundled Inter font (OFL) and the app icon, compiled in as WPF resources. -->
+  <ItemGroup>
+    <Resource Include="Assets\Fonts\Inter-*.ttf" />
+    <Resource Include="Assets\app.ico" />
+    <None Include="Assets\Fonts\Inter-OFL.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" ExcludeFromSingleFile="true" Link="licenses\Inter-OFL.txt" />
+  </ItemGroup>
+
+</Project>
