@@ -59,9 +59,11 @@ internal sealed partial class OverviewTab : TabViewModel
 
         var builders = p.Builders;
         BuilderTime = p.BuilderTime > 0 ? Fmt.Duration(p.BuilderTimePerBuilder) : "Done";
-        BuilderDetail = p.BuilderTime > 0 ? $"{Fmt.Duration(p.BuilderTime)} of work · {Fmt.Plural(builders, "builder")}" : "Every building is maxed";
+        var boosts = r.Options.Boosts;
+        var builderBoost = home && boosts.Builder > 0 ? $" · {boosts.Builder}% boost" : "";
+        BuilderDetail = p.BuilderTime > 0 ? $"{Fmt.Duration(p.BuilderTime)} of work · {Fmt.Plural(builders, "builder")}{builderBoost}" : "Every building is maxed";
         LabTime = p.LabTime > 0 ? Fmt.Duration(p.LabTime) : "Done";
-        LabTitle = home ? "Laboratory" : "Star Laboratory";
+        LabTitle = (home ? "Laboratory" : "Star Laboratory") + (home && boosts.Research > 0 ? $" · {boosts.Research}% boost" : "");
         if (home)
         {
             var petHouseAt = ctx.Game.Get(GameData.PetHouseId)?.MaxLevelFor(ctx.Hall) ?? 0;

@@ -53,7 +53,7 @@ internal static class ScreenshotRunner
         shots.Add(Save(frame, dir, "account-switcher.png"));
         vm.IsAccountMenuOpen = false;
         await Scenarios(host, vm, frame, dir, shots);
-        await TabClick(host, vm);
+        await TabClick(host, vm, frame, dir, shots);
         vm.OnHidden();
 
         // Setup, one picture per step.
@@ -158,7 +158,7 @@ internal static class ScreenshotRunner
     /// E2E: a press on a tab in the real overlay window selects it, although the overlay never has the keyboard focus.
     /// The window is shown far off-screen and fully transparent, so nothing appears.
     /// </summary>
-    private static async Task TabClick(AppHost host, OverlayViewModel vm)
+    private static async Task TabClick(AppHost host, OverlayViewModel vm, Border frame, string dir, List<string> shots)
     {
         var view = new OverlayView { DataContext = vm };
         var window = new Overlay.OverlayWindow(view) { Left = -32000, Top = -32000, Width = 1260, Height = 760 };
@@ -175,25 +175,118 @@ internal static class ScreenshotRunner
                 return;
             }
 
-            var press = new System.Windows.Input.MouseButtonEventArgs(System.Windows.Input.Mouse.PrimaryDevice, Environment.TickCount, System.Windows.Input.MouseButton.Left)
-            {
-                RoutedEvent = UIElement.PreviewMouseDownEvent, // as real input: WPF raises the left-button events from it
-            };
-            target.RaiseEvent(press);
-            target.RaiseEvent(new System.Windows.Input.MouseButtonEventArgs(System.Windows.Input.Mouse.PrimaryDevice, Environment.TickCount, System.Windows.Input.MouseButton.Left)
-            {
-                RoutedEvent = UIElement.PreviewMouseUpEvent,
-            });
+            var press = Press(target);
             await Settle();
             var ok = ReferenceEquals(vm.SelectedTab, target.DataContext);
             var list = ItemsControl.ItemsControlFromItemContainer(target) as ListBox;
             host.Log.Log(ok ? LogLevel.Information : LogLevel.Warning, "E2E tab click: pressed {Tab}, selected {Selected} (item selected {ItemSelected}, list has {ListSelected}, handled {Handled}): {Result}",
                 ((TabViewModel)target.DataContext).Title, vm.SelectedTab?.Title, target.IsSelected, (list?.SelectedItem as TabViewModel)?.Title, press.Handled, ok ? "ok" : "FAILED");
+
+            await FilterChecks(host, vm, view, frame, dir, shots);
         }
         finally
         {
             window.Close();
         }
+    }
+
+    /// <summary>
+    /// E2E: a press on a filter chip filters the Rushed list; the sort chips order the builder list; a hero selected in
+    /// the builder list keeps the list on screen (its level strip used to push the list away).
+    /// </summary>
+    private static async Task FilterChecks(AppHost host, OverlayViewModel vm, OverlayView view, Border frame, string dir, List<string> shots)
+    {
+        var log = host.Log;
+        if (vm.Tabs.OfType<RushedTab>().FirstOrDefault() is { } rushed && rushed.Filters.Count > 1)
+        {
+            vm.SelectedTab = rushed;
+            await Settle();
+            var chip = Descendants<ListBoxItem>(view).FirstOrDefault(i => i.DataContext is Choice c && c.Key != "all" && rushed.Filters.Contains(c));
+            if (chip is not null)
+            {
+                Press(chip);
+                await Settle();
+                var picked = (Choice)chip.DataContext;
+                var ok = rushed.Filter == picked && rushed.Rows.Count > 0 && rushed.Rows.All(r => r.Category.ToString() == picked.Key);
+                log.Log(ok ? LogLevel.Information : LogLevel.Warning, "E2E rushed filter: pressed {Chip}, {Rows} rows: {Result}", picked.Label, rushed.Rows.Count, ok ? "ok" : "FAILED");
+                shots.Add(Save(frame, dir, "e2e-rushed-filter.png"));
+                rushed.Filter = rushed.Filters[0];
+            }
+        }
+
+        if (vm.Tabs.OfType<UpgradesTab>().FirstOrDefault(t => t.IsBuilder) is { } builder)
+        {
+            vm.SelectedTab = builder;
+            await Settle();
+            if (Descendants<ListBoxItem>(view).FirstOrDefault(i => i.DataContext is Choice { Key: "cheapest" }) is { } cheapest)
+            {
+                Press(cheapest);
+                await Settle();
+                builder.ResourceFilter = builder.ResourceFilters.FirstOrDefault(c => c.Key == nameof(Resource.Gold)) ?? builder.ResourceFilter;
+                await Settle();
+                var golds = builder.Rows.Where(r => !r.IsLocked).Select(r => r.CostTotals[Resource.Gold] + r.CostTotals.GoldOrElixir).ToList();
+                var ok = builder.Sort?.Key == "cheapest" && golds.Count > 1 && golds.Zip(golds.Skip(1)).All(p => p.First <= p.Second);
+                log.Log(ok ? LogLevel.Information : LogLevel.Warning, "E2E builder sort: {Sort} / {Resource}, {Rows} rows, first {First}, last {Last}: {Result}",
+                    builder.Sort?.Label, builder.ResourceFilter?.Label, builder.Rows.Count, golds.FirstOrDefault(), golds.LastOrDefault(), ok ? "ok" : "FAILED");
+                shots.Add(Save(frame, dir, "e2e-builder-cheapest-gold.png"));
+                builder.Sort = builder.Sorts[0];
+                builder.ResourceFilter = builder.ResourceFilters.FirstOrDefault();
+            }
+
+            if (builder.Rows.FirstOrDefault(r => r.Item.Kind == ItemKind.Hero) is { } hero)
+            {
+                builder.SelectedRow = hero;
+                await Settle();
+                view.UpdateLayout();
+                var list = Descendants<ListBox>(view).FirstOrDefault(l => ReferenceEquals(l.ItemsSource, builder.Rows));
+                var height = list?.ActualHeight ?? 0;
+                var ok = height >= 140 && builder.Strip.Count <= UpgradesTab.StripCells && builder.Strip.Any(c => c.IsOwned);
+                log.Log(ok ? LogLevel.Information : LogLevel.Warning, "E2E hero selected: {Hero}, list {Height:0} px high, strip {Cells} levels ({Detail}): {Result}",
+                    hero.Name, height, builder.Strip.Count, builder.StripDetail, ok ? "ok" : "FAILED");
+                shots.Add(Save(frame, dir, "e2e-hero-selected.png"));
+            }
+        }
+
+        if (vm.Tabs.OfType<EquipmentTab>().FirstOrDefault() is { } gear)
+        {
+            vm.SelectedTab = gear;
+            gear.Sort = gear.Sorts.First(c => c.Key == "cheapest");
+            await Settle();
+            var shiny = gear.Flat.Select(g => g.NextTotals[Resource.ShinyOre]).ToList();
+            var ok = !gear.IsByHero && shiny.Count > 0 && shiny.Zip(shiny.Skip(1)).All(p => p.First <= p.Second) && gear.Flat.All(g => g.CanUpgrade);
+            log.Log(ok ? LogLevel.Information : LogLevel.Warning, "E2E equipment sort: {Sort}, {Count} pieces, shiny {First} to {Last}: {Result}",
+                gear.Sort?.Label, gear.Flat.Count, shiny.FirstOrDefault(), shiny.LastOrDefault(), ok ? "ok" : "FAILED");
+            shots.Add(Save(frame, dir, "e2e-equipment-cheapest.png"));
+            gear.Sort = gear.Sorts[0];
+        }
+
+        if (vm.Tabs.OfType<MaxTab>().FirstOrDefault() is { } max)
+        {
+            vm.SelectedTab = max;
+            await Settle();
+            var groups = max.Groups.Count;
+            max.Filter = max.Filters.FirstOrDefault(c => c.Key == nameof(Category.Heroes)) ?? max.Filter;
+            await Settle();
+            var ok = groups > 1 && max.Rows.Any() && max.Rows.All(r => r.Category == Category.Heroes);
+            log.Log(ok ? LogLevel.Information : LogLevel.Warning, "E2E to max: {Groups} types, heroes filter {Rows} lines: {Result}", groups, max.Rows.Count(), ok ? "ok" : "FAILED");
+            shots.Add(Save(frame, dir, "e2e-tomax-heroes.png"));
+            max.Filter = max.Filters[0];
+        }
+    }
+
+    /// <summary>A left-button press and release on <paramref name="target"/>, raised the way real input arrives.</summary>
+    private static System.Windows.Input.MouseButtonEventArgs Press(UIElement target)
+    {
+        var press = new System.Windows.Input.MouseButtonEventArgs(System.Windows.Input.Mouse.PrimaryDevice, Environment.TickCount, System.Windows.Input.MouseButton.Left)
+        {
+            RoutedEvent = UIElement.PreviewMouseDownEvent, // WPF raises the left-button events from it
+        };
+        target.RaiseEvent(press);
+        target.RaiseEvent(new System.Windows.Input.MouseButtonEventArgs(System.Windows.Input.Mouse.PrimaryDevice, Environment.TickCount, System.Windows.Input.MouseButton.Left)
+        {
+            RoutedEvent = UIElement.PreviewMouseUpEvent,
+        });
+        return press;
     }
 
     private static IEnumerable<T> Descendants<T>(DependencyObject root)

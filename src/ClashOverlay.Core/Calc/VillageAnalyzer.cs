@@ -20,7 +20,11 @@ public sealed class HallNews
     public int ItemsWithNewLevels { get; init; }
 }
 
-public sealed record AnalyzerOptions(ProgressMode Mode = ProgressMode.Levels, int? BuildersOverride = null);
+public sealed record AnalyzerOptions(ProgressMode Mode = ProgressMode.Levels, int? BuildersOverride = null)
+{
+    /// <summary>Gold Pass builder and research boosts for the times shown (not for progress by time).</summary>
+    public TimeBoosts Boosts { get; init; } = TimeBoosts.None;
+}
 
 /// <summary>Everything the overlay shows for one village.</summary>
 public sealed class VillageReport
@@ -52,9 +56,9 @@ public static class VillageAnalyzer
         {
             State = state,
             Goals = goals,
-            Progress = ProgressCalculator.Calculate(goals, state, options.BuildersOverride),
+            Progress = ProgressCalculator.Calculate(goals, state, options.BuildersOverride, options.Boosts),
             Rush = RushCalculator.Calculate(data, state),
-            Upgrades = UpgradePlanner.Plan(goals, state),
+            Upgrades = UpgradePlanner.Plan(goals, state, options.Boosts),
             News = News(data, state.Village, state.HallLevel),
             Options = options,
         };

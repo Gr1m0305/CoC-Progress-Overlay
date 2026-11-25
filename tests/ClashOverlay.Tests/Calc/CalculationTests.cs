@@ -131,6 +131,48 @@ public class CalculationTests
     }
 
     [Fact]
+    public void Gold_pass_boosts_shorten_the_times_left()
+    {
+        var plain = VillageAnalyzer.Analyze(_data, ScenarioA());
+        var boosted = VillageAnalyzer.Analyze(_data, ScenarioA(), new AnalyzerOptions { Boosts = new TimeBoosts(Builder: 20, Research: 10) });
+        var p = boosted.Progress;
+
+        Assert.Equal(plain.Progress.BuilderTime * 8 / 10, p.BuilderTime);
+        Assert.Equal(plain.Progress.LabTime * 9 / 10, p.LabTime);
+        Assert.Equal(8640, p.LongestHeroTime); // 10800 less 20%
+        Assert.Equal(plain.Progress.PetHouseTime, p.PetHouseTime);
+        Assert.Equal(plain.Progress.Overall.TimeFraction, p.Overall.TimeFraction, 9); // progress by time uses the game's times
+
+        var king = Assert.Single(boosted.Upgrades.Builder, r => r.Item.Id == King);
+        Assert.Equal(_data.Get(King)!.TimeToReach(king.ToLevel) * 8 / 10, king.Time);
+        var barbarian = Assert.Single(boosted.Upgrades.Laboratory, r => r.Item.Id == Barbarian);
+        Assert.Equal(_data.Get(Barbarian)!.TimeToReach(barbarian.ToLevel) * 9 / 10, barbarian.Time);
+    }
+
+    [Fact]
+    public void A_running_upgrade_keeps_its_real_timer_under_a_boost()
+    {
+        var state = Home(_data, 3, [(Cannon, 3, 100)]);
+        var goal = Assert.Single(VillageAnalyzer.Analyze(_data, state).Goals, g => g.Item.Id == Cannon && g.IsUpgrading);
+        Assert.Equal(100, goal.TimeLeftWith(new TimeBoosts(20, 20)));
+        Assert.Equal(goal.TimeLeft, goal.TimeLeftWith(TimeBoosts.None));
+    }
+
+    [Fact]
+    public void Boosts_only_touch_main_village_builders_and_the_laboratory()
+    {
+        var b = new TimeBoosts(Builder: 20, Research: 15);
+        Assert.Equal(20, b.PercentFor(UpgradeTrack.Builder));
+        Assert.Equal(15, b.PercentFor(UpgradeTrack.Laboratory));
+        Assert.Equal(0, b.PercentFor(UpgradeTrack.PetHouse));
+        Assert.Equal(0, b.PercentFor(UpgradeTrack.BuilderBaseBuilder));
+        Assert.Equal(0, b.PercentFor(UpgradeTrack.StarLaboratory));
+        Assert.Equal(1000, b.Apply(_data.Get(BbCannon)!, 1000));
+        Assert.Equal(TimeBoosts.MaxPercent, new TimeBoosts(Builder: 90).PercentFor(UpgradeTrack.Builder));
+        Assert.Equal(81, new TimeBoosts(Builder: 20).Apply(_data.Get(Cannon)!, 101)); // rounded up
+    }
+
+    [Fact]
     public void Time_weighted_progress()
     {
         var state = Home(_data, 3, [(ArcherTower, 1, null)]);

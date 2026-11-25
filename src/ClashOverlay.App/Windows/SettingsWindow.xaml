@@ -228,7 +228,9 @@
                     <!-- ============ Accounts ============ -->
                     <StackPanel Visibility="{Binding IsAccountsPage, Converter={StaticResource Vis}}">
                         <TextBlock Style="{StaticResource PageTitle}" Text="Accounts" />
-                        <TextBlock Style="{StaticResource Body}" Margin="0,8,0,18" Text="The order here is the order of the account switcher and of the number keys." />
+                        <TextBlock Style="{StaticResource Body}" Margin="0,8,0,6" Text="The order here is the order of the account switcher and of the number keys." />
+                        <TextBlock Style="{StaticResource Hint}" Margin="0,0,0,18" TextWrapping="Wrap"
+                                   Text="Builder and research boosts come from the Gold Pass. The game does not include them in the export, so pick yours here. The overlay's Main Village upgrade times use them; upgrades already running keep their real timers." />
                         <ItemsControl ItemsSource="{Binding Accounts}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
@@ -245,7 +247,25 @@
                                                     <TextBlock Style="{StaticResource Muted}" Margin="0,3,0,0" Text="{Binding Detail}" TextWrapping="Wrap" />
                                                 </StackPanel>
                                             </DockPanel>
-                                            <WrapPanel Margin="38,12,0,0">
+                                            <Grid Margin="38,12,0,0">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="120" />
+                                                    <ColumnDefinition Width="Auto" />
+                                                </Grid.ColumnDefinitions>
+                                                <Grid.RowDefinitions>
+                                                    <RowDefinition Height="Auto" />
+                                                    <RowDefinition Height="Auto" />
+                                                </Grid.RowDefinitions>
+                                                <TextBlock Style="{StaticResource RowLabel}" Text="Builder boost" />
+                                                <Border Grid.Column="1" Style="{StaticResource Segments}">
+                                                    <ListBox Style="{StaticResource SegmentList}" ItemsSource="{Binding BoostChoices}" SelectedItem="{Binding BuilderBoost}" />
+                                                </Border>
+                                                <TextBlock Grid.Row="1" Margin="0,8,0,0" Style="{StaticResource RowLabel}" Text="Research boost" />
+                                                <Border Grid.Row="1" Grid.Column="1" Margin="0,8,0,0" Style="{StaticResource Segments}">
+                                                    <ListBox Style="{StaticResource SegmentList}" ItemsSource="{Binding BoostChoices}" SelectedItem="{Binding ResearchBoost}" />
+                                                </Border>
+                                            </Grid>
+                                            <WrapPanel Margin="38,14,0,0">
                                                 <Button Style="{StaticResource SecondaryButton}" Margin="0,0,8,0" Content="Import export…" Command="{Binding ImportCommand}" />
                                                 <Button Style="{StaticResource SecondaryButton}" Margin="0,0,8,0" Content="Clear manual changes" Command="{Binding ClearEditsCommand}" />
                                                 <Button Style="{StaticResource SecondaryButton}" Margin="0,0,8,0" Content="Move up" Command="{Binding MoveUpCommand}" />

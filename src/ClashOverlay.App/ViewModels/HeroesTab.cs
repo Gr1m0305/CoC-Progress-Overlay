@@ -44,7 +44,7 @@ internal sealed partial class UnitCard : ObservableObject
         }
         else if (next is not null)
         {
-            _status = $"Next: {Fmt.Duration(next.TimeSeconds)}";
+            _status = $"Next: {Fmt.Duration(ctx.Report.Options.Boosts.Apply(goal.Item, next.TimeSeconds))}";
             var cost = new ResourceTotals();
             cost.Add(next);
             NextCost = ctx.Costs(cost);

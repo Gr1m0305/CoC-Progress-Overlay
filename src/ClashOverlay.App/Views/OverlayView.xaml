@@ -147,7 +147,6 @@
 
                 <!-- Footer -->
                 <Grid Grid.Row="3">
-                    <TextBlock Style="{StaticResource Muted}" FontSize="10.5" Text="Clash Tracker · Not affiliated with, endorsed, sponsored or approved by Supercell." />
                     <Border Style="{StaticResource Badge}" Background="{DynamicResource AccentSoftBrush}" HorizontalAlignment="Right"
                             Visibility="{Binding IsDemo, Converter={x:Static v:VisibleIf.Instance}}">
                         <TextBlock Style="{StaticResource BadgeText}" Foreground="{DynamicResource AccentBrush}" FontSize="10" Text="DEMO DATA" />

@@ -98,6 +98,9 @@ site sees. It only ever revokes keys named "Clash Tracker", and only at the 10-k
 * Unknown ids are a logged warning and skipped, never a crash. Unknown sections are ignored.
 * The export's `tag` must match the selected account; a mismatch is refused.
 * `timestamp` is Unix seconds (UTC). The export's age is shown wherever it drives numbers.
+* `boosts` holds only `clocktower_cooldown` in real exports (confirmed). The Gold Pass builder
+  and research boosts are in neither the export nor the API (`/goldpass/seasons/current` has
+  only the season's dates), so they are a per-account setting (0, 10, 15 or 20%).
 
 ### Merge rule (export + API)
 
@@ -241,11 +244,10 @@ downloaded data (`tests/.../Th19ChecksTests.cs`).
   app titled "Google Play Games") and `emulator\crosvm.exe` (the VM that hosts each game's
   window). Default rule: process `crosvm.exe`, title `Clash of Clans*`. **Assumed:** the game
   window's title is the game's name; the "Pick game window" button covers any difference.
-* **BlueStacks 5:** process `HD-Player.exe`; the window title is the instance name (often
-  "BlueStacks App Player"), not the game's, so the rule matches any title. Other emulators
-  with the same kind of rule: LDPlayer `dnplayer.exe`, MEmu `MEmu.exe`, Nox `Nox.exe`, MuMu
-  `MuMuPlayer.exe` / `MuMuNxDevice.exe`. A last generic rule matches any window titled exactly
-  `Clash of Clans`.
+* Google Play Games is the only supported launcher and the only built-in rule. Versions before
+  1.2 also added rules for BlueStacks, LDPlayer, MEmu, NoxPlayer, MuMu Player and any window
+  titled `Clash of Clans`; settings upgrade removes those when they are unchanged, and keeps
+  any the user edited. "Pick game window" still adds a rule for any other window.
 * Rules are editable in Settings (process name + title wildcard). Detection uses
   `SetWinEventHook` (create, destroy, show, hide, name change, foreground, minimise) plus a
   3-second fallback poll of top-level windows. Nothing is read from the game process; only its

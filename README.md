@@ -138,6 +138,7 @@ Main Village tabs:
 
 * Overview
 * Rushed
+* To max
 * Builder upgrades
 * Laboratory
 * Heroes & Pets
@@ -147,12 +148,33 @@ Main Village tabs:
 Builder Base tabs:
 
 * Overview
+* To max
 * Builder upgrades
 * Star Laboratory
 * Profile
 
+What the tabs let you do:
+
+* **To max** lists everything that can still be upgraded at your Town Hall level, in one place:
+  buildings, traps, walls, heroes, troops, spells, siege machines, pets and equipment, grouped by
+  type, with the time and cost left for each. The chips at the top show one type at a time.
+* **Rushed** has a chip for each type with something rushed (Defenses, Traps, Heroes, Hero
+  Equipment and so on), so you can look at one type at a time.
+* **Builder upgrades** and **Laboratory** sort by longest or shortest time, or cheapest or priciest
+  cost. When the upgrades use more than one resource, the chips on the right show only gold, only
+  elixir, only dark elixir and so on.
+* **Equipment** shows the pieces by hero, or as one list sorted by the ore for the next level,
+  cheapest or priciest first, optionally for one ore only.
+
+The overlay remembers the sort and filter you picked on each tab until it closes.
+
 Settings → Overlay switches progress between **levels** (each level counts the same) and
 **time** (weighted by upgrade time).
+
+**Gold Pass boosts.** The game does not include builder and research boosts in the export or the
+API, so set them per account in Settings → Accounts (none, 10%, 15% or 20%). Main Village builder
+times (buildings, traps, walls and heroes) and laboratory times then use them. Pets, equipment and
+the Builder Base are not affected, and upgrades already running keep their real timers.
 
 ## Getting an API key
 
@@ -192,27 +214,21 @@ In between, the overlay counts running timers down, and you can mark finished up
 The overlay shows how old the export is, and turns the dot next to it orange when the export is
 older than three days or from before your last Town Hall upgrade.
 
-## Supported launchers
+## Supported launcher
 
-Clash Tracker looks for these windows by default:
+Clash Tracker supports **Google Play Games for PC**. It finds the game by its process and title:
 
 | Launcher | Process | Window title |
 | --- | --- | --- |
 | Google Play Games for PC | `crosvm.exe` | `Clash of Clans*` |
-| BlueStacks | `HD-Player.exe` | any |
-| LDPlayer | `dnplayer.exe` | any |
-| MEmu | `MEmu.exe` | any |
-| NoxPlayer | `Nox.exe` | any |
-| MuMu Player | `MuMuPlayer.exe` | any |
-| MuMu Player 12 | `MuMuNxDevice.exe` | any |
-| Anything else | any | `Clash of Clans` |
 
 Google Play Games adds your player name to the title (`Clash of Clans - Name`), which the `*`
 covers. When several windows match, the one you are using wins.
 
-If your launcher is not found, open Settings → Game detection and press **Pick game window**.
+To use another launcher anyway, open Settings → Game detection and press **Pick game window**.
 Click the game within 15 seconds and Clash Tracker adds a rule for it. You can also edit the rules
-by hand. A title can use `*` and `?` wildcards.
+by hand. A title can use `*` and `?` wildcards. Updating from version 1.1 or older removes the
+emulator rules those versions added by default, unless you edited them.
 
 ## Where things are kept
 
@@ -349,5 +365,3 @@ their owners and are not part of this repository.
 
 This material is unofficial and is not endorsed by Supercell. For more information see
 Supercell's Fan Content Policy: <https://supercell.com/en/fan-content-policy/>.
-
-Clash Tracker is not affiliated with, endorsed, sponsored or approved by Supercell.

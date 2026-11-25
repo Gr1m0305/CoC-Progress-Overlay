@@ -4,6 +4,21 @@ All notable changes to Clash Tracker are listed here. Versions follow
 [Semantic Versioning](https://semver.org/). Each release on GitHub takes its notes from the
 matching section below.
 
+## [1.2.0] - 2026-11-26
+
+A new To max tab, filters and sorting on the upgrade lists, and Gold Pass boosts.
+
+- New To max tab: everything you can still upgrade at your Town Hall level, in one place, with the time and cost left.
+- Filter the Rushed tab by type, such as Defenses, Traps, Heroes or Hero Equipment.
+- Sort Builder upgrades and Laboratory by time or cost, and show one resource at a time.
+- Sort Equipment by the ore for the next level, cheapest or priciest first.
+- Set your Gold Pass builder and research boosts for each account in Settings → Accounts.
+- Fixed the hero screen that got stuck showing every level after raising a level by hand.
+- Google Play Games is now the only supported launcher. Pick game window still works for others.
+- Removed the "not affiliated with Supercell" text.
+
+**Install:** Clash Tracker 1.1.0 updates itself. Otherwise download `ClashOverlay-Setup-1.2.0.exe` and run it. If Windows says "Windows protected your PC", click **More info**, then **Run anyway**.
+
 ## [1.1.0] - 2026-11-26
 
 Clash Tracker now installs its own updates, and you can move and resize the overlay.

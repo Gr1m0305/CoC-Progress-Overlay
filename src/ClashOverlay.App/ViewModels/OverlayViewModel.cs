@@ -54,6 +54,7 @@ internal sealed partial class OverlayViewModel : ObservableObject
     private readonly DispatcherTimer _refresh;
     private readonly DispatcherTimer _clock;
     private readonly Dictionary<string, int> _selection = new();
+    private readonly Dictionary<string, string> _views = new();
     private CancellationTokenSource? _loading;
     private (string Tag, ProfileData Data)? _profile;
 
@@ -281,6 +282,21 @@ internal sealed partial class OverlayViewModel : ObservableObject
     public int RememberedSelection(string tabKey) => _selection.GetValueOrDefault($"{Village}/{tabKey}", -1);
 
     public void RememberSelection(string tabKey, int itemId) => _selection[$"{Village}/{tabKey}"] = itemId;
+
+    /// <summary>A tab's chosen sort or filter (by name, e.g. "builder/sort"), kept across reloads while the app runs.</summary>
+    public string? RememberedView(string name) => _views.GetValueOrDefault($"{Village}/{name}");
+
+    public void RememberView(string name, string? value)
+    {
+        if (value is null)
+        {
+            _views.Remove($"{Village}/{name}");
+        }
+        else
+        {
+            _views[$"{Village}/{name}"] = value;
+        }
+    }
 
     partial void OnVillageChanged(Village value)
     {

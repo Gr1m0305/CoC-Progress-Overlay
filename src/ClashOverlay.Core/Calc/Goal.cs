@@ -56,6 +56,23 @@ public sealed class Goal
 
     public long TimeDone => Math.Max(0, TimeToTarget - TimeLeft);
 
+    /// <summary><see cref="TimeLeft"/> with Gold Pass boosts on the levels not started yet.</summary>
+    public long TimeLeftWith(TimeBoosts? boosts)
+    {
+        if (boosts is null || boosts.IsNone)
+        {
+            return TimeLeft;
+        }
+
+        if (Level >= Target)
+        {
+            return 0;
+        }
+
+        var first = IsUpgrading ? TimerLeft!.Value : boosts.Apply(Item, Item.TimeToReach(Level + 1));
+        return first + boosts.Apply(Item, Item.TimeBetween(Level + 1, Target));
+    }
+
     /// <summary>Cost still to pay: a running upgrade is already paid for.</summary>
     public ResourceTotals CostLeft
     {

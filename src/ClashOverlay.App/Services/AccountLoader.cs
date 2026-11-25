@@ -108,7 +108,7 @@ internal sealed class AccountLoader(GameDataService data, IClashApiClient api, A
             }
         }
 
-        var options = new AnalyzerOptions(s.ProgressMode, s.BuildersOverride);
+        var options = new AnalyzerOptions(s.ProgressMode, s.BuildersOverride) { Boosts = account.Boosts };
         var home = state.Home.HallLevel > 0 ? VillageAnalyzer.Analyze(game, state.Home, options) : null;
         var bb = state.BuilderBase.HallLevel > 0 ? VillageAnalyzer.Analyze(game, state.BuilderBase, options with { BuildersOverride = null }) : null;
         return new AccountData

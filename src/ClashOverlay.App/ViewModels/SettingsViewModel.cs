@@ -464,6 +464,9 @@ internal sealed partial class SettingsViewModel : ObservableObject, IDisposable
 
     internal void NicknameChanged() => Changed();
 
+    /// <summary>An account's boosts changed: save, and the overlay works its times out again.</summary>
+    internal void AccountChanged() => Changed();
+
     internal void Import(AccountRowViewModel row) => _actions.OpenImport(row.Tag);
 
     internal void ClearEdits(AccountRowViewModel row)
@@ -689,7 +692,7 @@ internal sealed partial class SettingsViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private void ResetRules()
     {
-        if (_actions.Confirm("Reset detection rules", "Replace your rules with the built-in ones for Google Play Games and the common emulators?"))
+        if (_actions.Confirm("Reset detection rules", "Replace your rules with the built-in one for Google Play Games?"))
         {
             S.GameRules = GameWindowRule.Defaults();
             RebuildRules();
@@ -991,6 +994,38 @@ internal sealed partial class AccountRowViewModel : ObservableObject
         }
     }
 
+    public IReadOnlyList<BoostChoice> BoostChoices => BoostChoice.All;
+
+    /// <summary>Gold Pass builder boost for this account's Main Village.</summary>
+    public BoostChoice BuilderBoost
+    {
+        get => BoostChoice.For(_account.BuilderBoost);
+        set
+        {
+            if (value is not null && value.Percent != _account.BuilderBoost)
+            {
+                _account.BuilderBoost = value.Percent;
+                OnPropertyChanged();
+                _owner.AccountChanged();
+            }
+        }
+    }
+
+    /// <summary>Gold Pass research boost for this account's Laboratory.</summary>
+    public BoostChoice ResearchBoost
+    {
+        get => BoostChoice.For(_account.ResearchBoost);
+        set
+        {
+            if (value is not null && value.Percent != _account.ResearchBoost)
+            {
+                _account.ResearchBoost = value.Percent;
+                OnPropertyChanged();
+                _owner.AccountChanged();
+            }
+        }
+    }
+
     [ObservableProperty]
     private string _detail = "";
 
@@ -1035,6 +1070,16 @@ internal sealed partial class AccountRowViewModel : ObservableObject
 
     [RelayCommand(CanExecute = nameof(CanMoveUp))]
     private void MoveUp() => _owner.Move(this, -1);
+}
+
+/// <summary>A boost percentage in a segmented choice: "None", "10%", "15%", "20%" (the Gold Pass steps).</summary>
+internal sealed record BoostChoice(int Percent)
+{
+    public static readonly IReadOnlyList<BoostChoice> All = [new(0), new(10), new(15), new(20)];
+
+    public static BoostChoice For(int percent) => All.FirstOrDefault(c => c.Percent == percent) ?? new BoostChoice(percent);
+
+    public override string ToString() => Percent == 0 ? "None" : $"{Percent}%";
 }
 
 /// <summary>One game window rule, edited in place.</summary>

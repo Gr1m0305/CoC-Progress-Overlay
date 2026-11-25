@@ -118,12 +118,16 @@ public static class ProgressCalculator
         Category.Defenses, Category.ArmyBuildings, Category.Resources, Category.Traps, Category.Walls, Category.Heroes, Category.Troops,
     ];
 
-    public static VillageProgress Calculate(IReadOnlyList<Goal> goals, VillageState state, int? buildersOverride = null)
+    /// <summary>
+    /// Progress and what is left. <paramref name="boosts"/> shortens the times left (builder, lab, per category);
+    /// progress by time always uses the game's own upgrade times.
+    /// </summary>
+    public static VillageProgress Calculate(IReadOnlyList<Goal> goals, VillageState state, int? buildersOverride = null, TimeBoosts? boosts = null)
     {
         var order = state.Village == Village.Home ? HomeOrder : BuilderOrder;
-        var categories = order.Select(c => Summarise(c, goals.Where(g => g.Item.Category == c).ToList())).ToList();
+        var categories = order.Select(c => Summarise(c, goals.Where(g => g.Item.Category == c).ToList(), boosts)).ToList();
         var nonWall = goals.Where(g => g.Item.Category != Category.Walls).ToList();
-        var overall = Summarise(Category.None, nonWall);
+        var overall = Summarise(Category.None, nonWall, boosts);
         var total = new ResourceTotals();
         foreach (var g in goals)
         {
@@ -132,7 +136,7 @@ public static class ProgressCalculator
 
         var builderTrack = state.Village == Village.Home ? UpgradeTrack.Builder : UpgradeTrack.BuilderBaseBuilder;
         var labTrack = state.Village == Village.Home ? UpgradeTrack.Laboratory : UpgradeTrack.StarLaboratory;
-        var heroes = goals.Where(g => g.Item.Kind == ItemKind.Hero).OrderByDescending(g => g.TimeLeft).FirstOrDefault();
+        var heroes = goals.Where(g => g.Item.Kind == ItemKind.Hero).OrderByDescending(g => g.TimeLeftWith(boosts)).FirstOrDefault();
 
         return new VillageProgress
         {
@@ -143,16 +147,16 @@ public static class ProgressCalculator
             Walls = Walls(goals.Where(g => g.Item.Category == Category.Walls).ToList()),
             CostLeft = overall.CostLeft,
             TotalCostLeft = total,
-            BuilderTime = goals.Where(g => g.Item.Track == builderTrack).Sum(g => g.TimeLeft),
+            BuilderTime = goals.Where(g => g.Item.Track == builderTrack).Sum(g => g.TimeLeftWith(boosts)),
             Builders = buildersOverride is > 0 ? buildersOverride.Value : state.Builders,
-            LabTime = goals.Where(g => g.Item.Track == labTrack).Sum(g => g.TimeLeft),
-            PetHouseTime = goals.Where(g => g.Item.Track == UpgradeTrack.PetHouse).Sum(g => g.TimeLeft),
+            LabTime = goals.Where(g => g.Item.Track == labTrack).Sum(g => g.TimeLeftWith(boosts)),
+            PetHouseTime = goals.Where(g => g.Item.Track == UpgradeTrack.PetHouse).Sum(g => g.TimeLeftWith(boosts)),
             LongestHero = heroes is { TimeLeft: > 0 } ? heroes.Item : null,
-            LongestHeroTime = heroes?.TimeLeft ?? 0,
+            LongestHeroTime = heroes?.TimeLeftWith(boosts) ?? 0,
         };
     }
 
-    public static CategoryProgress Summarise(Category category, IReadOnlyList<Goal> goals)
+    public static CategoryProgress Summarise(Category category, IReadOnlyList<Goal> goals, TimeBoosts? boosts = null)
     {
         var cost = new ResourceTotals();
         foreach (var g in goals)
@@ -167,7 +171,7 @@ public static class ProgressCalculator
             LevelsMax = goals.Sum(g => (long)g.Target),
             TimeDone = goals.Sum(g => g.TimeDone),
             TimeMax = goals.Sum(g => g.TimeToTarget),
-            TimeLeft = goals.Sum(g => g.TimeLeft),
+            TimeLeft = goals.Sum(g => g.TimeLeftWith(boosts)),
             CostLeft = cost,
             ItemsMaxed = goals.Count(g => g.IsMaxed),
             ItemsTotal = goals.Count,

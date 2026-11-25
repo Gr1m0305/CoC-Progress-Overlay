@@ -17,7 +17,10 @@ public sealed class UpgradeRow
     /// <summary>The level everything should reach (the hall's max, or the level a merge needs).</summary>
     public required int Target { get; init; }
 
-    public long Time => Item.TimeToReach(ToLevel);
+    /// <summary>Upgrade time of one copy, with any Gold Pass boost.</summary>
+    public long Time => (Boosts ?? TimeBoosts.None).Apply(Item, Item.TimeToReach(ToLevel));
+
+    public TimeBoosts? Boosts { get; init; }
 
     public ResourceTotals Cost
     {
@@ -66,25 +69,25 @@ public sealed class UpgradePlan
 
 public static class UpgradePlanner
 {
-    public static UpgradePlan Plan(IReadOnlyList<Goal> goals, VillageState state)
+    public static UpgradePlan Plan(IReadOnlyList<Goal> goals, VillageState state, TimeBoosts? boosts = null)
     {
         var home = state.Village == Village.Home;
         var builderTrack = home ? UpgradeTrack.Builder : UpgradeTrack.BuilderBaseBuilder;
         var labTrack = home ? UpgradeTrack.Laboratory : UpgradeTrack.StarLaboratory;
         var labName = home ? "Lab" : "Star Lab";
 
-        var builder = Rows(goals.Where(g => g.Item.Track == builderTrack && g.Item.Category != Category.Walls), g =>
+        var builder = Rows(boosts, goals.Where(g => g.Item.Track == builderTrack && g.Item.Category != Category.Walls), g =>
             g.Item.Kind == ItemKind.Hero && g.Item.GetLevel(g.Level + 1) is { RequiredHeroHall: > 0 } l && state.HeroHallLevel < l.RequiredHeroHall
                 ? $"Needs Hero Hall {l.RequiredHeroHall}"
                 : null);
 
-        var lab = Rows(goals.Where(g => g.Item.Track == labTrack), g =>
+        var lab = Rows(boosts, goals.Where(g => g.Item.Track == labTrack), g =>
             g.Item.GetLevel(g.Level + 1) is { RequiredLab: > 0 } l && state.LabLevel < l.RequiredLab ? $"Needs {labName} {l.RequiredLab}" : null);
 
-        var pets = Rows(goals.Where(g => g.Item.Track == UpgradeTrack.PetHouse), g =>
+        var pets = Rows(boosts, goals.Where(g => g.Item.Track == UpgradeTrack.PetHouse), g =>
             g.Item.GetLevel(g.Level + 1) is { RequiredPetHouse: > 0 } l && state.PetHouseLevel < l.RequiredPetHouse ? $"Needs Pet House {l.RequiredPetHouse}" : null);
 
-        var smith = Rows(goals.Where(g => g.Item.Track == UpgradeTrack.Blacksmith), g =>
+        var smith = Rows(boosts, goals.Where(g => g.Item.Track == UpgradeTrack.Blacksmith), g =>
             g.Item.GetLevel(g.Level + 1) is { RequiredBlacksmith: > 0 } l && state.BlacksmithLevel < l.RequiredBlacksmith ? $"Needs Blacksmith {l.RequiredBlacksmith}" : null);
 
         var active = new List<ActiveUpgrade>();
@@ -108,7 +111,7 @@ public static class UpgradePlanner
         };
     }
 
-    private static List<UpgradeRow> Rows(IEnumerable<Goal> goals, Func<Goal, string?> locked) =>
+    private static List<UpgradeRow> Rows(TimeBoosts? boosts, IEnumerable<Goal> goals, Func<Goal, string?> locked) =>
         goals
             .Where(g => g.Level < g.Target && !g.IsUpgrading && g.Item.GetLevel(g.Level + 1) is not null)
             .GroupBy(g => (g.Item.Id, g.Level, g.Target, g.IsMergeFeed))
@@ -124,6 +127,7 @@ public static class UpgradePlanner
                     IsMergeFeed = first.IsMergeFeed,
                     IsNewAtHall = grp.All(g => g.IsNewAtHall),
                     LockedReason = locked(first),
+                    Boosts = boosts,
                 };
             })
             .OrderByDescending(r => r.Time)

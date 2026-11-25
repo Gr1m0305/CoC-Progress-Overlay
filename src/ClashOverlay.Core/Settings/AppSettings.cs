@@ -71,19 +71,24 @@ public sealed class GameWindowRule
     public const string GameTitlePattern = "Clash of Clans*";
 
     /// <summary>
-    /// Google Play Games for PC runs the game in <c>crosvm.exe</c> with the window titled "Clash of Clans - player
-    /// name". Emulators title their window after the emulator, so those rules match the emulator window.
+    /// Google Play Games for PC is the supported way to play: it runs the game in <c>crosvm.exe</c> with the window
+    /// titled "Clash of Clans - player name".
     /// </summary>
     public static List<GameWindowRule> Defaults() =>
     [
         new() { Name = "Google Play Games", ProcessName = "crosvm", TitlePattern = GameTitlePattern },
-        new() { Name = "BlueStacks", ProcessName = "HD-Player", TitlePattern = "*" },
-        new() { Name = "LDPlayer", ProcessName = "dnplayer", TitlePattern = "*" },
-        new() { Name = "MEmu", ProcessName = "MEmu", TitlePattern = "*" },
-        new() { Name = "NoxPlayer", ProcessName = "Nox", TitlePattern = "*" },
-        new() { Name = "MuMu Player", ProcessName = "MuMuPlayer", TitlePattern = "*" },
-        new() { Name = "MuMu Player 12", ProcessName = "MuMuNxDevice", TitlePattern = "*" },
-        new() { Name = "Any window titled Clash of Clans", ProcessName = null, TitlePattern = "Clash of Clans" },
+    ];
+
+    /// <summary>The emulator rules versions before 1.2 added by default (name, process, title).</summary>
+    private static readonly (string Name, string? Process, string Title)[] RetiredDefaults =
+    [
+        ("BlueStacks", "HD-Player", "*"),
+        ("LDPlayer", "dnplayer", "*"),
+        ("MEmu", "MEmu", "*"),
+        ("NoxPlayer", "Nox", "*"),
+        ("MuMu Player", "MuMuPlayer", "*"),
+        ("MuMu Player 12", "MuMuNxDevice", "*"),
+        ("Any window titled Clash of Clans", null, "Clash of Clans"),
     ];
 
     /// <summary>
@@ -94,8 +99,9 @@ public sealed class GameWindowRule
         title.StartsWith("Clash of Clans", StringComparison.OrdinalIgnoreCase) ? GameTitlePattern : title;
 
     /// <summary>
-    /// Rules saved by 1.0.0 that only matched the exact title "Clash of Clans" (or one player's name) are widened to
-    /// "Clash of Clans*". Returns true when something changed.
+    /// Brings rules saved by older versions up to date: rules that only matched the exact title "Clash of Clans" (or
+    /// one player's name) are widened to "Clash of Clans*", and the emulator rules that used to be built in are
+    /// dropped unless the user changed them. Returns true when something changed.
     /// </summary>
     public static bool Upgrade(List<GameWindowRule> rules)
     {
@@ -121,9 +127,14 @@ public sealed class GameWindowRule
             }
         }
 
+        var before = rules.Count;
+        rules.RemoveAll(r => RetiredDefaults.Any(d =>
+            r.Name == d.Name
+            && string.Equals(r.ProcessName?.Trim() is { Length: > 0 } p ? p : null, d.Process, StringComparison.OrdinalIgnoreCase)
+            && string.Equals(r.TitlePattern?.Trim(), d.Title, StringComparison.OrdinalIgnoreCase)));
+
         // Two picks of the same game, now identical: keep the first.
         var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        var before = rules.Count;
         rules.RemoveAll(r => r.Name.StartsWith("Picked: ", StringComparison.Ordinal) && !seen.Add($"{r.ProcessName}|{r.TitlePattern}"));
         return changed || rules.Count != before;
     }
@@ -156,6 +167,15 @@ public sealed class AccountSettings
 
     /// <summary>When the API first showed the current Town Hall level; an export older than this is out of date.</summary>
     public DateTimeOffset? TownHallChangedAt { get; set; }
+
+    /// <summary>Gold Pass builder boost in percent (the game does not export it).</summary>
+    public int BuilderBoost { get; set; }
+
+    /// <summary>Gold Pass research boost in percent.</summary>
+    public int ResearchBoost { get; set; }
+
+    [JsonIgnore]
+    public TimeBoosts Boosts => new(BuilderBoost, ResearchBoost);
 }
 
 /// <summary><c>%LOCALAPPDATA%\ClashOverlay\settings.json</c>. Never holds the API key or the developer login.</summary>
@@ -260,6 +280,8 @@ public sealed class AppSettings
             .Select(a =>
             {
                 a.Tag = PlayerTag.Normalize(a.Tag);
+                a.BuilderBoost = Math.Clamp(a.BuilderBoost, 0, TimeBoosts.MaxPercent);
+                a.ResearchBoost = Math.Clamp(a.ResearchBoost, 0, TimeBoosts.MaxPercent);
                 return a;
             })
             .Where(a => PlayerTag.IsValid(a.Tag) && seen.Add(a.Tag))

@@ -36,13 +36,36 @@ public sealed class SettingsTests : IDisposable
     public void Bad_hotkeys(string text) => Assert.False(HotkeyGesture.TryParse(text, out _));
 
     [Theory]
-    [InlineData("crosvm", "Clash of Clans", "Google Play Games")]
-    [InlineData("crosvm.exe", "clash of clans", "Google Play Games")]
-    [InlineData("HD-Player", "BlueStacks App Player", "BlueStacks")]
-    [InlineData("dnplayer", "LDPlayer", "LDPlayer")]
-    [InlineData("SomethingElse", "Clash of Clans", "Any window titled Clash of Clans")]
-    public void Default_rules_match_launchers(string process, string title, string rule) =>
-        Assert.Equal(rule, GameWindowRule.Defaults().First(r => r.Matches(process, title)).Name);
+    [InlineData("crosvm", "Clash of Clans")]
+    [InlineData("crosvm.exe", "clash of clans")]
+    [InlineData("crosvm", "Clash of Clans - Chief")]
+    public void The_default_rule_is_google_play_games(string process, string title)
+    {
+        var rule = Assert.Single(GameWindowRule.Defaults());
+        Assert.Equal("Google Play Games", rule.Name);
+        Assert.True(rule.Matches(process, title));
+    }
+
+    [Fact]
+    public void Built_in_emulator_rules_from_older_versions_are_removed()
+    {
+        List<GameWindowRule> rules =
+        [
+            new() { Name = "Google Play Games", ProcessName = "crosvm", TitlePattern = "Clash of Clans*" },
+            new() { Name = "BlueStacks", ProcessName = "HD-Player", TitlePattern = "*" },
+            new() { Name = "LDPlayer", ProcessName = "dnplayer", TitlePattern = "*", Enabled = false },
+            new() { Name = "MuMu Player 12", ProcessName = "MuMuNxDevice", TitlePattern = "*" },
+            new() { Name = "Any window titled Clash of Clans", ProcessName = null, TitlePattern = "Clash of Clans" },
+            new() { Name = "BlueStacks", ProcessName = "HD-Player", TitlePattern = "Clash of Clans*" }, // edited: kept
+            new() { Name = "Picked: My emulator", ProcessName = "emu", TitlePattern = "Game" },
+        ];
+
+        Assert.True(GameWindowRule.Upgrade(rules));
+
+        Assert.Equal(["Google Play Games", "BlueStacks", "Picked: My emulator"], rules.Select(r => r.Name));
+        Assert.Equal("Clash of Clans*", rules[1].TitlePattern);
+        Assert.False(GameWindowRule.Upgrade(rules));
+    }
 
     [Theory]
     [InlineData("crosvm", "Google Play Games")]
@@ -71,7 +94,7 @@ public sealed class SettingsTests : IDisposable
         var path = _dir.File("settings.json");
         var s = new AppSettings
         {
-            Accounts = [new AccountSettings { Tag = "2pq8lv9cy", Nickname = "Main" }, new AccountSettings { Tag = "#2PQ8LV9CY" }, new AccountSettings { Tag = "bad!" }],
+            Accounts = [new AccountSettings { Tag = "2pq8lv9cy", Nickname = "Main", BuilderBoost = 20, ResearchBoost = 300 }, new AccountSettings { Tag = "#2PQ8LV9CY" }, new AccountSettings { Tag = "bad!" }],
             SelectedAccount = "#NOPE",
             Scale = 3,
             PanelOpacity = 0.1,
@@ -85,6 +108,8 @@ public sealed class SettingsTests : IDisposable
 
         Assert.Equal("#2PQ8LV9CY", Assert.Single(loaded.Accounts).Tag);
         Assert.Equal("Main", loaded.Accounts[0].Nickname);
+        Assert.Equal(new TimeBoosts(20, TimeBoosts.MaxPercent), loaded.Accounts[0].Boosts);
+        Assert.DoesNotContain("\"boosts\"", File.ReadAllText(path));
         Assert.Equal("#2PQ8LV9CY", loaded.SelectedAccount);
         Assert.Equal(AppSettings.MaxScale, loaded.Scale);
         Assert.Equal(0.5, loaded.PanelOpacity);
@@ -100,7 +125,8 @@ public sealed class SettingsTests : IDisposable
     [InlineData("crosvm.exe", "Clash of Clans - Chief", true)]
     [InlineData("crosvm", "Brawl Stars", false)]
     [InlineData("chrome", "Clash of Clans - Wikipedia - Google Chrome", false)]
-    [InlineData("chrome", "Clash of Clans", true)]
+    [InlineData("chrome", "Clash of Clans", false)]
+    [InlineData("HD-Player", "BlueStacks App Player", false)]
     public void Default_rules_find_google_play_games(string process, string title, bool found) =>
         Assert.Equal(found, GameWindowRule.Defaults().Any(r => r.Matches(process, title)));
 

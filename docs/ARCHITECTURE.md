@@ -39,6 +39,8 @@ API and the village JSON the player exports from the game.
   * `Calc/`: `ProgressCalculator` (per category and overall, levels or time weighted, costs and
     times to max), `RushCalculator` (below the previous Town Hall's max), `UpgradePlanner`
     (longest available builder, lab and pet upgrades, active upgrades), all for both villages.
+    `TimeBoosts` applies the account's Gold Pass builder and research percentages to upgrades
+    not yet started on the Main Village `Builder` and `Laboratory` tracks.
   * `Assets/AssetPaths`: ClashKing CDN path for any item/level; the local PNG path.
   * `Settings/`: `AppSettings` and friends (JSON in `%LOCALAPPDATA%\ClashOverlay\settings.json`),
     `HotkeyGesture`, `GameWindowRule`.
@@ -112,7 +114,10 @@ Everything the app writes lives in `%LOCALAPPDATA%\ClashOverlay\`:
    1260:760 shape kept (`OverlayGeometry.Resize`). The position and scale are saved in
    `OverlayLeft`/`OverlayTop`/`Scale` and replace the placement setting until reset.
 5. **Compute**: `AccountSession` merges the export with the cached API player into a
-   `VillageState`, then the calculators produce the view models for every tab.
+   `VillageState`, then the calculators produce the view models for every tab. Tabs are rebuilt
+   after every load (a +1, an import, a settings change). Their sort and filter chips are
+   `Choice` items in single-select list boxes, and the choice is kept across rebuilds by
+   `OverlayViewModel.RememberedView`/`RememberView` (in memory, per village and tab).
 6. **Hide**: on the hotkey, Esc, the game being minimised or closed.
 
 ## Releases and updates
@@ -154,3 +159,10 @@ Everything the app writes lives in `%LOCALAPPDATA%\ClashOverlay\`:
   and Builder Hall themselves, decorations, obstacles.
 * Rush score = levels behind the previous Town Hall's max, summed, walls and equipment shown
   but not scored.
+* Gold Pass boosts shorten the times left (overview, upgrade lists, To max) but not progress by
+  time, which stays weighted by the game's base times so the percentage does not jump when a
+  boost changes. A running upgrade keeps its real timer.
+* The "every level" strip on the upgrade tabs shows at most 32 levels around the lowest level
+  owned, so heroes with 100+ levels never push the list off the screen.
+* Google Play Games is the only built-in game window rule; "Pick game window" covers anything
+  else.

@@ -67,6 +67,7 @@ internal static class TabFactory
             [
                 new OverviewTab(ctx),
                 new RushedTab(ctx),
+                new MaxTab(ctx),
                 new UpgradesTab(ctx, UpgradeList.Builder),
                 new UpgradesTab(ctx, UpgradeList.Laboratory),
                 new HeroesTab(ctx),
@@ -76,6 +77,7 @@ internal static class TabFactory
             :
             [
                 new OverviewTab(ctx),
+                new MaxTab(ctx),
                 new UpgradesTab(ctx, UpgradeList.Builder),
                 new UpgradesTab(ctx, UpgradeList.Laboratory),
                 new ProfileTab(ctx),

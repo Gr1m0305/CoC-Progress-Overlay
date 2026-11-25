@@ -103,7 +103,7 @@ internal sealed partial class ActiveRow : ObservableObject
             : a.Track == UpgradeTrack.PetHouse ? Palette.Orange
             : ctx.Village == Village.BuilderBase ? Palette.Blue : Palette.Gold;
         _endsAt = ctx.Report.State.AsOf.AddSeconds(a.SecondsLeft);
-        Total = Math.Max(1, a.Item.TimeToReach(a.ToLevel));
+        Total = Math.Max(1, ctx.Report.Options.Boosts.Apply(a.Item, a.Item.TimeToReach(a.ToLevel)));
         _timeLeft = Fmt.Duration(a.SecondsLeft);
     }
 
@@ -142,7 +142,7 @@ internal sealed partial class UpgradeRowVm : ObservableObject
     private readonly TabContext _ctx;
 
     public UpgradeRowVm(TabContext ctx, UpgradeRow row, Brush accent)
-        : this(ctx, row.Item, row.FromLevel, row.Count, row.Target, row.IsBuild ? 0 : row.Time, row.Cost)
+        : this(ctx, row.Item, row.FromLevel, row.Count, row.Target, row.Time, row.Cost)
     {
         if (row.IsNewAtHall)
         {
@@ -164,11 +164,6 @@ internal sealed partial class UpgradeRowVm : ObservableObject
             Badges.Add(Badge.Locked(why));
             IsLocked = true;
         }
-
-        if (row.IsBuild)
-        {
-            Time = Fmt.Duration(row.Time);
-        }
     }
 
     public UpgradeRowVm(TabContext ctx, ItemDef item, int from, int count, int target, long time, ResourceTotals cost)
@@ -184,7 +179,9 @@ internal sealed partial class UpgradeRowVm : ObservableObject
         CountText = count > 1 ? $"×{count}" : "";
         LevelText = from == 0 ? $"New → {from + 1}" : $"Lv {from} → {from + 1}";
         TargetText = target > from + 1 ? $"max {target}" : "last level";
-        Time = time > 0 ? Fmt.Duration(time) : item.TimeToReach(from + 1) > 0 ? Fmt.Duration(item.TimeToReach(from + 1)) : "instant";
+        Seconds = time;
+        Time = time > 0 ? Fmt.Duration(time) : "instant";
+        CostTotals = cost;
         Cost = ctx.Costs(cost);
         var edits = ctx.Edits(item.Id);
         if (edits > 0)
@@ -216,7 +213,13 @@ internal sealed partial class UpgradeRowVm : ObservableObject
 
     public string TargetText { get; }
 
+    /// <summary>Upgrade time of one copy, for sorting.</summary>
+    public long Seconds { get; }
+
     public string Time { get; }
+
+    /// <summary>Cost of one copy, for sorting and the resource filter.</summary>
+    public ResourceTotals CostTotals { get; }
 
     public IReadOnlyList<CostItem> Cost { get; }
 
@@ -254,6 +257,12 @@ internal sealed record LevelCell(ImageSource? Image, int Level, int Owned, bool 
 }
 
 internal sealed record NewsItem(ImageSource? Image, string Name, string Detail, bool IsNew);
+
+/// <summary>A sort or filter option, shown as a chip; <see cref="Detail"/> is a muted count next to the label.</summary>
+internal sealed record Choice(string Key, string Label, string? Detail = null, ImageSource? Icon = null)
+{
+    public static Choice Pick(IReadOnlyList<Choice> choices, string? key) => choices.FirstOrDefault(c => c.Key == key) ?? choices[0];
+}
 
 /// <summary>A labelled number for stat grids.</summary>
 internal sealed record Stat(string Label, string Value, ImageSource? Icon = null);

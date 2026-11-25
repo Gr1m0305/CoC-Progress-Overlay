@@ -58,7 +58,59 @@
         </Style.Triggers>
     </Style>
 
+    <!-- Sort and filter chips: a single-choice ListBox (the overlay window selects items on mouse press). -->
+    <Style x:Key="Chip" TargetType="ListBoxItem">
+        <Setter Property="Foreground" Value="{StaticResource SubtleTextBrush}" />
+        <Setter Property="FontFamily" Value="{StaticResource Inter}" />
+        <Setter Property="FontSize" Value="11.5" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Focusable" Value="False" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ListBoxItem">
+                    <Border x:Name="Bd" Margin="0,0,6,6" Padding="9,4" CornerRadius="7" Background="{StaticResource CardBrush}"
+                            BorderBrush="{StaticResource CardBorderBrush}" BorderThickness="1">
+                        <ContentPresenter VerticalAlignment="Center" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Bd" Property="Background" Value="{StaticResource CardHoverBrush}" />
+                            <Setter Property="Foreground" Value="{StaticResource TextBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsSelected" Value="True">
+                            <Setter TargetName="Bd" Property="Background" Value="{DynamicResource AccentSoftBrush}" />
+                            <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+                            <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+    <Style x:Key="ChipList" TargetType="ListBox">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="Focusable" Value="False" />
+        <Setter Property="SelectionMode" Value="Single" />
+        <Setter Property="ItemContainerStyle" Value="{StaticResource Chip}" />
+        <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled" />
+        <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Disabled" />
+        <Setter Property="ItemsPanel" Value="{StaticResource Wrap}" />
+    </Style>
+
     <!-- ===== Shared pieces ===== -->
+
+    <DataTemplate DataType="{x:Type vm:Choice}">
+        <StackPanel Orientation="Horizontal">
+            <Image Width="15" Height="15" Margin="0,0,5,0" VerticalAlignment="Center" Source="{Binding Icon}" RenderOptions.BitmapScalingMode="HighQuality"
+                   Visibility="{Binding Icon, Converter={StaticResource Vis}}" />
+            <TextBlock VerticalAlignment="Center" Text="{Binding Label}" />
+            <TextBlock Margin="6,0,0,0" VerticalAlignment="Center" Opacity="0.65" FontWeight="Normal" Text="{Binding Detail}"
+                       Visibility="{Binding Detail, Converter={StaticResource Vis}}" />
+        </StackPanel>
+    </DataTemplate>
 
     <DataTemplate DataType="{x:Type vm:CostItem}">
         <StackPanel Orientation="Horizontal" Margin="0,0,14,4" Background="Transparent" ToolTip="{Binding Tooltip}">
@@ -292,15 +344,6 @@
         </Border>
     </DataTemplate>
 
-    <DataTemplate DataType="{x:Type vm:RushChip}">
-        <Border Margin="0,0,8,8" Padding="10,5" CornerRadius="8" Background="{StaticResource CardBrush}" BorderBrush="{StaticResource CardBorderBrush}" BorderThickness="1">
-            <StackPanel Orientation="Horizontal">
-                <TextBlock Style="{StaticResource Strong}" FontSize="12" Text="{Binding Name}" />
-                <TextBlock Style="{StaticResource Muted}" Margin="8,0,0,0" VerticalAlignment="Center" Text="{Binding Detail}" />
-            </StackPanel>
-        </Border>
-    </DataTemplate>
-
     <DataTemplate DataType="{x:Type vm:RushedTab}">
         <Grid>
             <Grid.RowDefinitions>
@@ -326,7 +369,8 @@
                     <TextBlock Style="{StaticResource Subtle}" Margin="0,4,0,0" TextWrapping="Wrap" Text="{Binding SubLine}" />
                 </StackPanel>
             </Border>
-            <ItemsControl Grid.Row="1" Margin="0,12,0,4" ItemsSource="{Binding Chips}" ItemsPanel="{StaticResource Wrap}" Focusable="False" />
+            <ListBox Grid.Row="1" Margin="0,12,0,4" Style="{StaticResource ChipList}" ItemsSource="{Binding Filters}" SelectedItem="{Binding Filter, Mode=TwoWay}"
+                     ToolTip="Show one type only" />
             <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" Focusable="False">
                 <ItemsControl ItemsSource="{Binding Rows}" Focusable="False">
                     <ItemsControl.ItemsPanel>
@@ -337,6 +381,80 @@
                 </ItemsControl>
             </ScrollViewer>
             <TextBlock Grid.Row="3" Style="{StaticResource Muted}" Margin="4,8,0,0" Text="{Binding WallsText}" Visibility="{Binding WallsText, Converter={StaticResource Vis}}" />
+        </Grid>
+    </DataTemplate>
+
+    <!-- ===== To max ===== -->
+
+    <DataTemplate DataType="{x:Type vm:MaxRow}">
+        <Border Margin="0,0,10,6" Padding="10,6" CornerRadius="8" Background="{StaticResource CardBrush}">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <v:ItemImage Width="44" Height="44" Source="{Binding Image}" Text="{Binding Name}" />
+                <StackPanel Grid.Column="1" Margin="12,0,8,0" VerticalAlignment="Center">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Style="{StaticResource Strong}" Text="{Binding Name}" />
+                        <TextBlock Style="{StaticResource Subtle}" Margin="6,0,0,0" FontWeight="SemiBold" Text="{Binding CountText}" />
+                        <TextBlock Style="{StaticResource Muted}" Margin="8,0,0,0" VerticalAlignment="Center" Foreground="{StaticResource BlueBrush}" Text="{Binding Note}"
+                                   Visibility="{Binding Note, Converter={StaticResource Vis}}" />
+                    </StackPanel>
+                    <TextBlock Style="{StaticResource Muted}" Margin="0,3,0,0" Text="{Binding LevelText}" />
+                </StackPanel>
+                <StackPanel Grid.Column="2" VerticalAlignment="Center" MaxWidth="230">
+                    <TextBlock Style="{StaticResource Strong}" FontSize="12" HorizontalAlignment="Right" Margin="0,0,0,3" Text="{Binding TimeText}"
+                               Visibility="{Binding TimeText, Converter={StaticResource Vis}}" ToolTip="Time left to max every copy on this line" />
+                    <ItemsControl HorizontalAlignment="Right" Margin="0,0,-14,-4" ItemsSource="{Binding Cost}" ItemsPanel="{StaticResource Wrap}" Focusable="False" />
+                </StackPanel>
+            </Grid>
+        </Border>
+    </DataTemplate>
+
+    <DataTemplate DataType="{x:Type vm:MaxGroup}">
+        <StackPanel Margin="0,0,0,6">
+            <TextBlock Style="{StaticResource CardTitle}" Margin="4,6,0,8" Text="{Binding Title}" />
+            <ItemsControl ItemsSource="{Binding Rows}" Focusable="False">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <UniformGrid Columns="2" VerticalAlignment="Top" />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+            </ItemsControl>
+        </StackPanel>
+    </DataTemplate>
+
+    <DataTemplate DataType="{x:Type vm:MaxTab}">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+            <Border Style="{StaticResource Card}" Padding="18,14">
+                <StackPanel>
+                    <TextBlock Text="{Binding Headline}">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock" BasedOn="{StaticResource Title}">
+                                <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsDone}" Value="True">
+                                        <Setter Property="Foreground" Value="{StaticResource GreenBrush}" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                    <TextBlock Style="{StaticResource Subtle}" Margin="0,4,0,0" TextWrapping="Wrap" Text="{Binding SubLine}" />
+                </StackPanel>
+            </Border>
+            <ListBox Grid.Row="1" Margin="0,12,0,4" Style="{StaticResource ChipList}" ItemsSource="{Binding Filters}" SelectedItem="{Binding Filter, Mode=TwoWay}"
+                     ToolTip="Show one type only" />
+            <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" Focusable="False">
+                <ItemsControl ItemsSource="{Binding Groups}" Focusable="False" />
+            </ScrollViewer>
         </Grid>
     </DataTemplate>
 
@@ -451,10 +569,11 @@
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
-                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" MinHeight="150" />
                     <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
-                <DockPanel Margin="4,0,0,10" Height="20">
+                <DockPanel Margin="4,0,0,8" Height="20">
                     <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Visibility="{Binding EditsText, Converter={StaticResource Vis}}">
                         <TextBlock Style="{StaticResource Muted}" VerticalAlignment="Center" Foreground="{StaticResource BlueBrush}" Text="{Binding EditsText}" />
                         <Button Style="{StaticResource UndoButton}" Margin="8,0,0,0" Padding="8,1" Content="Undo last" Command="{Binding UndoLatestCommand}"
@@ -462,19 +581,34 @@
                     </StackPanel>
                     <TextBlock Style="{StaticResource Subtle}" VerticalAlignment="Center" Text="{Binding Summary}" />
                 </DockPanel>
-                <Border Grid.Row="1" Style="{StaticResource Card}" Padding="6">
-                    <ListBox Style="{StaticResource PlainList}" ItemsSource="{Binding Rows}" SelectedItem="{Binding SelectedRow, Mode=TwoWay}"
-                             v:ListBehavior.ScrollSelectedIntoView="True"
-                             ScrollViewer.CanContentScroll="True" VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.ScrollUnit="Pixel" />
+                <Grid Grid.Row="1" Margin="0,0,0,4">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <ListBox Style="{StaticResource ChipList}" ItemsSource="{Binding Sorts}" SelectedItem="{Binding Sort, Mode=TwoWay}" ToolTip="Sort the list" />
+                    <ListBox Grid.Column="1" Margin="10,0,0,0" HorizontalAlignment="Right" Style="{StaticResource ChipList}" ItemsSource="{Binding ResourceFilters}"
+                             SelectedItem="{Binding ResourceFilter, Mode=TwoWay}" ToolTip="Show upgrades that cost one resource"
+                             Visibility="{Binding HasResourceFilter, Converter={StaticResource Vis}}" />
+                </Grid>
+                <Border Grid.Row="2" Style="{StaticResource Card}" Padding="6">
+                    <Grid>
+                        <ListBox Style="{StaticResource PlainList}" ItemsSource="{Binding Rows}" SelectedItem="{Binding SelectedRow, Mode=TwoWay}"
+                                 v:ListBehavior.ScrollSelectedIntoView="True"
+                                 ScrollViewer.CanContentScroll="True" VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.ScrollUnit="Pixel" />
+                        <TextBlock Style="{StaticResource Muted}" Margin="10" Text="{Binding EmptyText}" Visibility="{Binding EmptyText, Converter={StaticResource Vis}}" />
+                    </Grid>
                 </Border>
-                <Border Grid.Row="2" Style="{StaticResource Card}" Margin="0,12,0,0" Visibility="{Binding StripTitle, Converter={StaticResource Vis}}">
+                <Border Grid.Row="3" Style="{StaticResource Card}" Margin="0,12,0,0" Visibility="{Binding StripTitle, Converter={StaticResource Vis}}">
                     <StackPanel>
                         <StackPanel Orientation="Horizontal">
                             <TextBlock Style="{StaticResource CardTitle}" Text="EVERY LEVEL · " />
                             <TextBlock Style="{StaticResource CardTitle}" Foreground="{StaticResource TextBrush}" Text="{Binding StripTitle}" />
                         </StackPanel>
                         <TextBlock Style="{StaticResource Muted}" Margin="0,-4,0,8" Text="{Binding StripDetail}" />
-                        <ItemsControl ItemsSource="{Binding Strip}" ItemsPanel="{StaticResource Wrap}" Focusable="False" />
+                        <ScrollViewer MaxHeight="162" VerticalScrollBarVisibility="Auto" Focusable="False">
+                            <ItemsControl ItemsSource="{Binding Strip}" ItemsPanel="{StaticResource Wrap}" Focusable="False" />
+                        </ScrollViewer>
                     </StackPanel>
                 </Border>
             </Grid>
@@ -664,9 +798,52 @@
         </Border>
     </DataTemplate>
 
+    <!-- One piece in the sorted list: hero, level, the next level's ore, and the hand-edit buttons. -->
+    <DataTemplate x:Key="GearLine" DataType="{x:Type vm:GearRow}">
+        <Border Style="{StaticResource Card}" Margin="0,0,12,12" Padding="10,8">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Grid Width="44" Height="44" VerticalAlignment="Top">
+                    <v:ItemImage Source="{Binding Image}" Text="{Binding Name}" />
+                    <v:ItemImage Width="20" Height="20" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,-4,-4" Source="{Binding HeroImage}" Text="{Binding Hero}" />
+                </Grid>
+                <StackPanel Grid.Column="1" Margin="12,0,0,0">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Style="{StaticResource Strong}" FontSize="12" Text="{Binding Name}" />
+                        <Border Style="{StaticResource Badge}" Margin="6,0,0,0" Padding="5,0" Background="#33B15CFF" Visibility="{Binding IsEpic, Converter={StaticResource Vis}}">
+                            <TextBlock Style="{StaticResource BadgeText}" FontSize="9" Foreground="#D9A6FF" Text="EPIC" />
+                        </Border>
+                        <TextBlock Style="{StaticResource Muted}" Margin="6,0,0,0" VerticalAlignment="Center" Foreground="{StaticResource BlueBrush}" Text="edited"
+                                   Visibility="{Binding CanUndo, Converter={StaticResource Vis}}" />
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,2,0,0">
+                        <TextBlock Style="{StaticResource Muted}" Text="{Binding Hero}" />
+                        <TextBlock Style="{StaticResource Muted}" Text="  ·  " />
+                        <TextBlock Style="{StaticResource Subtle}" FontWeight="SemiBold" Text="{Binding LevelText}" />
+                    </StackPanel>
+                    <Grid Margin="0,5,0,0">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Style="{StaticResource Muted}" Margin="0,0,8,4" VerticalAlignment="Center" Text="Next" />
+                            <ItemsControl ItemsSource="{Binding NextCost}" ItemsPanel="{StaticResource Wrap}" Focusable="False" />
+                        </StackPanel>
+                        <StackPanel Style="{StaticResource HoverActions}" VerticalAlignment="Center">
+                            <Button Style="{StaticResource EditButton}" Padding="7,1" Content="+1" Command="{Binding RaiseCommand}" Visibility="{Binding CanRaise, Converter={StaticResource Vis}}"
+                                    ToolTip="Mark one level as done. Kept until the API shows the new level." />
+                            <Button Style="{StaticResource UndoButton}" Padding="7,1" Content="Undo" Command="{Binding UndoCommand}" Visibility="{Binding CanUndo, Converter={StaticResource Vis}}" />
+                        </StackPanel>
+                    </Grid>
+                </StackPanel>
+            </Grid>
+        </Border>
+    </DataTemplate>
+
     <DataTemplate DataType="{x:Type vm:EquipmentTab}">
         <Grid>
             <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="*" />
             </Grid.RowDefinitions>
@@ -680,7 +857,17 @@
                 <TextBlock Grid.Column="1" Style="{StaticResource Muted}" Margin="0,0,12,0" VerticalAlignment="Center" Text="{Binding OreTitle}" />
                 <ItemsControl Grid.Column="2" Margin="0,4,0,0" ItemsSource="{Binding Ore}" ItemsPanel="{StaticResource Horizontal}" Focusable="False" />
             </Grid>
-            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Focusable="False">
+            <Grid Grid.Row="1" Margin="0,0,0,4">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <ListBox Style="{StaticResource ChipList}" ItemsSource="{Binding Sorts}" SelectedItem="{Binding Sort, Mode=TwoWay}" ToolTip="Group by hero, or sort by the next level's ore" />
+                <ListBox Grid.Column="1" Margin="10,0,0,0" HorizontalAlignment="Right" Style="{StaticResource ChipList}" ItemsSource="{Binding OreFilters}"
+                         SelectedItem="{Binding OreFilter, Mode=TwoWay}" ToolTip="Sort by one ore and show what needs it"
+                         Visibility="{Binding ShowOreFilter, Converter={StaticResource Vis}}" />
+            </Grid>
+            <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" Focusable="False" Visibility="{Binding IsByHero, Converter={StaticResource Vis}}">
                 <ItemsControl ItemsSource="{Binding Groups}" Focusable="False" Margin="0,0,-12,0">
                     <ItemsControl.ItemsPanel>
                         <ItemsPanelTemplate>
@@ -689,6 +876,18 @@
                     </ItemsControl.ItemsPanel>
                 </ItemsControl>
             </ScrollViewer>
+            <Grid Grid.Row="2" Visibility="{Binding IsSorted, Converter={StaticResource Vis}}">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Focusable="False">
+                    <ItemsControl ItemsSource="{Binding Flat}" ItemTemplate="{StaticResource GearLine}" Focusable="False" Margin="0,0,-12,0">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <UniformGrid Columns="3" VerticalAlignment="Top" />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                    </ItemsControl>
+                </ScrollViewer>
+                <TextBlock Style="{StaticResource Muted}" Margin="4" Text="{Binding FlatEmpty}" Visibility="{Binding FlatEmpty, Converter={StaticResource Vis}}" />
+            </Grid>
         </Grid>
     </DataTemplate>
 
