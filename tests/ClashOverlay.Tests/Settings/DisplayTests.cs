@@ -172,6 +172,56 @@ public sealed class DisplayTests
     }
 
     [Fact]
+    public void Dragged_overlay_stays_where_it_was_put()
+    {
+        var work = new PixelRect(0, 0, 1920, 1040);
+        var (rect, fit) = OverlayGeometry.PlaceAt(work, 300, 120, 1260, 760);
+        Assert.Equal(new PixelRect(300, 120, 1260, 760), rect);
+        Assert.Equal(1.0, fit);
+    }
+
+    [Fact]
+    public void Dragged_overlay_is_brought_back_on_screen()
+    {
+        var work = new PixelRect(0, 0, 1920, 1040);
+        var (off, _) = OverlayGeometry.PlaceAt(work, 1500, 900, 1260, 760);
+        Assert.Equal(new PixelRect(660, 280, 1260, 760), off);
+        var (left, _) = OverlayGeometry.PlaceAt(work, -2000, -50, 1260, 760);
+        Assert.Equal(0, left.Left);
+        Assert.Equal(0, left.Top);
+        var (tooBig, fit) = OverlayGeometry.PlaceAt(work, 0, 0, 2520, 1520);
+        Assert.True(fit < 1);
+        Assert.True(tooBig.Width <= 1920 && tooBig.Height <= 1040);
+    }
+
+    [Theory]
+    [InlineData(ResizeCorner.BottomRight, 126, 76, 100, 50, 1386, 836)]
+    [InlineData(ResizeCorner.BottomRight, -126, -76, 100, 50, 1134, 684)]
+    [InlineData(ResizeCorner.TopLeft, -126, -76, -26, -26, 1386, 836)]
+    [InlineData(ResizeCorner.TopRight, 126, -76, 100, -26, 1386, 836)]
+    [InlineData(ResizeCorner.BottomLeft, -126, 76, -26, 50, 1386, 836)]
+    public void Corners_resize_and_keep_the_shape(ResizeCorner corner, int dx, int dy, int left, int top, int width, int height)
+    {
+        var start = new PixelRect(100, 50, 1260, 760);
+        var r = OverlayGeometry.Resize(start, corner, dx, dy, 630, 2520);
+        Assert.Equal(new PixelRect(left, top, width, height), r);
+        Assert.Equal(OverlayGeometry.BaseWidth / OverlayGeometry.BaseHeight, r.Width / (double)r.Height, 2);
+    }
+
+    [Fact]
+    public void Resizing_stops_at_the_limits()
+    {
+        var start = new PixelRect(0, 0, 1260, 760);
+        Assert.Equal(630, OverlayGeometry.Resize(start, ResizeCorner.BottomRight, -5000, -5000, 630, 1900).Width);
+        Assert.Equal(1900, OverlayGeometry.Resize(start, ResizeCorner.BottomRight, 5000, 5000, 630, 1900).Width);
+
+        // Dragging the top-left corner in keeps the bottom-right corner where it was.
+        var small = OverlayGeometry.Resize(start, ResizeCorner.TopLeft, 5000, 5000, 630, 1900);
+        Assert.Equal(1260, small.Right);
+        Assert.Equal(760, small.Bottom);
+    }
+
+    [Fact]
     public void Scrubber_hides_keys()
     {
         var jwt = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJpc3MiOiJzdXBlcmNlbGwiLCJhdWQiOiJzdXBlcmNlbGw6Z2FtZWFwaSJ9.c2lnbmF0dXJlc2lnbmF0dXJl";

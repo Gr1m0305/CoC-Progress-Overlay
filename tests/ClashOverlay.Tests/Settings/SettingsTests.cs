@@ -86,12 +86,76 @@ public sealed class SettingsTests : IDisposable
         Assert.Equal("#2PQ8LV9CY", Assert.Single(loaded.Accounts).Tag);
         Assert.Equal("Main", loaded.Accounts[0].Nickname);
         Assert.Equal("#2PQ8LV9CY", loaded.SelectedAccount);
-        Assert.Equal(1.5, loaded.Scale);
+        Assert.Equal(AppSettings.MaxScale, loaded.Scale);
         Assert.Equal(0.5, loaded.PanelOpacity);
         Assert.Null(loaded.BuildersOverride);
         Assert.Equal(ProgressMode.Time, loaded.ProgressMode);
         Assert.Equal("Ctrl+Shift+R", loaded.Hotkeys.Toggle);
         Assert.Contains("\"Time\"", File.ReadAllText(path)); // enums as names
+    }
+
+    [Theory]
+    [InlineData("crosvm", "Clash of Clans", true)]
+    [InlineData("crosvm", "Clash of Clans - FlamingArrow48", true)]
+    [InlineData("crosvm.exe", "Clash of Clans - Chief", true)]
+    [InlineData("crosvm", "Brawl Stars", false)]
+    [InlineData("chrome", "Clash of Clans - Wikipedia - Google Chrome", false)]
+    [InlineData("chrome", "Clash of Clans", true)]
+    public void Default_rules_find_google_play_games(string process, string title, bool found) =>
+        Assert.Equal(found, GameWindowRule.Defaults().Any(r => r.Matches(process, title)));
+
+    [Fact]
+    public void Rules_saved_by_1_0_are_widened()
+    {
+        List<GameWindowRule> rules =
+        [
+            new() { Name = "Picked: Clash of Clans - FlamingArrow48", ProcessName = "crosvm", TitlePattern = "Clash of Clans - FlamingArrow48" },
+            new() { Name = "Picked: Clash of Clans - Alt", ProcessName = "crosvm", TitlePattern = "Clash of Clans - Alt" },
+            new() { Name = "Google Play Games", ProcessName = "crosvm", TitlePattern = "Clash of Clans" },
+            new() { Name = "Picked: BlueStacks App Player", ProcessName = "HD-Player", TitlePattern = "BlueStacks App Player" },
+            new() { Name = "My rule", ProcessName = null, TitlePattern = "Clash of Clans - Exact" },
+        ];
+
+        Assert.True(GameWindowRule.Upgrade(rules));
+
+        Assert.Equal(4, rules.Count); // the two picks became one
+        Assert.Equal("Picked: Clash of Clans", rules[0].Name);
+        Assert.Equal("Clash of Clans*", rules[0].TitlePattern);
+        Assert.Equal("Clash of Clans*", rules[1].TitlePattern);
+        Assert.Equal("BlueStacks App Player", rules[2].TitlePattern);
+        Assert.Equal("Clash of Clans - Exact", rules[3].TitlePattern);
+        Assert.True(rules[0].Matches("crosvm", "Clash of Clans - SomeoneElse"));
+        Assert.False(GameWindowRule.Upgrade(rules)); // only once
+    }
+
+    [Fact]
+    public void Old_settings_files_are_upgraded_when_loaded()
+    {
+        var path = _dir.File("settings.json");
+        File.WriteAllText(path, """
+            { "gameRules": [ { "name": "Google Play Games", "processName": "crosvm", "titlePattern": "Clash of Clans", "enabled": true } ],
+              "showDetectionToast": true, "checkForUpdates": true, "updateNotifiedTag": "v1.0.0" }
+            """);
+        var s = AppSettings.Load(path);
+        Assert.Equal("Clash of Clans*", Assert.Single(s.GameRules).TitlePattern);
+        Assert.True(s.InstallUpdatesAutomatically);
+    }
+
+    [Theory]
+    [InlineData("Clash of Clans - FlamingArrow48", "Clash of Clans*")]
+    [InlineData("Clash of Clans", "Clash of Clans*")]
+    [InlineData("BlueStacks App Player", "BlueStacks App Player")]
+    public void Picked_windows_are_saved_without_the_player_name(string title, string pattern) =>
+        Assert.Equal(pattern, GameWindowRule.PatternForPicked(title));
+
+    [Fact]
+    public void A_half_saved_position_is_dropped()
+    {
+        var s = new AppSettings { OverlayLeft = 100, OverlayTop = null }.Normalize();
+        Assert.Null(s.OverlayLeft);
+        var t = new AppSettings { OverlayLeft = -1500, OverlayTop = 20 }.Normalize();
+        Assert.Equal(-1500, t.OverlayLeft);
+        Assert.Equal(20, t.OverlayTop);
     }
 
     [Fact]
@@ -100,7 +164,7 @@ public sealed class SettingsTests : IDisposable
         var s = AppSettings.Load(_dir.File("nope.json"));
         Assert.Equal("Ctrl+R", s.Hotkeys.Toggle);
         Assert.Equal(0.86, s.PanelOpacity);
-        Assert.True(s.CheckForUpdates);
+        Assert.True(s.InstallUpdatesAutomatically);
         Assert.False(s.DeveloperSiteAutoKey);
         Assert.NotEmpty(s.GameRules);
     }

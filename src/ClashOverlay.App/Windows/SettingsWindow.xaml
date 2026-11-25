@@ -29,7 +29,7 @@
                     <Image Source="pack://application:,,,/Assets/app.ico" Width="24" Height="24" RenderOptions.BitmapScalingMode="HighQuality" />
                     <TextBlock Margin="10,0,0,0" VerticalAlignment="Center" Style="{StaticResource Strong}" FontSize="15" Text="Settings" />
                 </StackPanel>
-                <Button DockPanel.Dock="Bottom" HorizontalAlignment="Stretch" Style="{StaticResource SecondaryButton}" Content="Preview with demo data" Command="{Binding PreviewCommand}" />
+                <TextBlock DockPanel.Dock="Bottom" Margin="6,0,0,0" Style="{StaticResource Muted}" Text="{Binding VersionText}" />
                 <ListBox ItemsSource="{Binding Sections}" SelectedItem="{Binding Section, Mode=TwoWay}" DisplayMemberPath="Title" Background="Transparent" BorderThickness="0"
                          ItemContainerStyle="{StaticResource NavItem}" ScrollViewer.HorizontalScrollBarVisibility="Disabled" />
             </DockPanel>
@@ -71,8 +71,21 @@
                                 <ColumnDefinition Width="56" />
                             </Grid.ColumnDefinitions>
                             <TextBlock Style="{StaticResource RowLabel}" Text="Size" />
-                            <Slider Grid.Column="1" Style="{StaticResource FormSlider}" Minimum="0.75" Maximum="1.5" Value="{Binding Scale}" SmallChange="0.05" LargeChange="0.1" />
+                            <Slider Grid.Column="1" Style="{StaticResource FormSlider}" Minimum="{Binding MinScale}" Maximum="{Binding MaxScale}" Value="{Binding Scale}" SmallChange="0.05" LargeChange="0.1" />
                             <TextBlock Grid.Column="2" Style="{StaticResource Strong}" HorizontalAlignment="Right" VerticalAlignment="Center" Text="{Binding ScaleText}" />
+                        </Grid>
+
+                        <Grid Style="{StaticResource Row}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="170" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="1">
+                                <TextBlock Style="{StaticResource Hint}" Margin="0"
+                                           Text="Or arrange it on the overlay itself: drag any empty part to move it, and drag a corner to make it bigger or smaller." />
+                                <Button Margin="0,8,0,0" HorizontalAlignment="Left" Style="{StaticResource SecondaryButton}" Content="Reset position and size"
+                                        Command="{Binding ResetOverlayPositionCommand}" IsEnabled="{Binding HasCustomPosition}" />
+                            </StackPanel>
                         </Grid>
 
                         <Grid Style="{StaticResource Row}">
@@ -146,10 +159,6 @@
                         <DockPanel Style="{StaticResource SwitchRow}">
                             <CheckBox DockPanel.Dock="Right" Style="{StaticResource Switch}" IsChecked="{Binding HideWhenGameMinimised}" />
                             <TextBlock Style="{StaticResource Body}" VerticalAlignment="Center" Text="Hide the overlay when the game is minimised or closed" />
-                        </DockPanel>
-                        <DockPanel Style="{StaticResource SwitchRow}">
-                            <CheckBox DockPanel.Dock="Right" Style="{StaticResource Switch}" IsChecked="{Binding ShowDetectionToast}" />
-                            <TextBlock Style="{StaticResource Body}" VerticalAlignment="Center" Text="Show a notification when the game is found" />
                         </DockPanel>
                     </StackPanel>
 
@@ -396,17 +405,20 @@
                             </StackPanel>
                         </Border>
 
-                        <DockPanel Style="{StaticResource SwitchRow}" Margin="0,22,0,4">
-                            <CheckBox DockPanel.Dock="Right" Style="{StaticResource Switch}" IsChecked="{Binding CheckForUpdates}" />
-                            <TextBlock Style="{StaticResource Body}" VerticalAlignment="Center" Text="Tell me when a new version of Clash Tracker is out" />
+                        <TextBlock Style="{StaticResource SectionTitle}" Margin="0,22,0,8" Text="Clash Tracker updates" />
+                        <DockPanel Style="{StaticResource SwitchRow}" Margin="0,0,0,4" Visibility="{Binding CanInstallUpdates, Converter={StaticResource Vis}}">
+                            <CheckBox DockPanel.Dock="Right" Style="{StaticResource Switch}" IsChecked="{Binding InstallUpdatesAutomatically}" />
+                            <TextBlock Style="{StaticResource Body}" VerticalAlignment="Center" Text="Install updates automatically" />
                         </DockPanel>
-                        <TextBlock Style="{StaticResource Hint}" Margin="0,0,0,8" Text="Checks GitHub at most once a day. Nothing is downloaded or installed for you." />
+                        <TextBlock Style="{StaticResource Hint}" Margin="0,0,0,8" Text="{Binding UpdatesHint}" />
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
                             <Button Style="{StaticResource SecondaryButton}" Content="Check now" Command="{Binding CheckAppUpdateCommand}" />
-                            <TextBlock Style="{StaticResource Muted}" Margin="12,0,0,0" VerticalAlignment="Center" TextWrapping="Wrap" MaxWidth="420"
+                            <Button Style="{StaticResource PrimaryButton}" Margin="8,0,0,0" Content="{Binding InstallUpdateText}" Command="{Binding InstallAppUpdateCommand}"
+                                    Visibility="{Binding CanInstallAppUpdate, Converter={StaticResource Vis}}" />
+                            <TextBlock Style="{StaticResource Muted}" Margin="12,0,0,0" VerticalAlignment="Center" TextWrapping="Wrap" MaxWidth="380"
                                        Text="{Binding AppUpdateStatus}" Visibility="{Binding AppUpdateStatus, Converter={StaticResource Vis}}" />
                         </StackPanel>
-                        <Button Margin="0,4,0,16" HorizontalAlignment="Left" Style="{StaticResource LinkButton}" Content="Open the download page"
+                        <Button Margin="0,4,0,16" HorizontalAlignment="Left" Style="{StaticResource LinkButton}" Content="Open the release page"
                                 Command="{Binding OpenLinkCommand}" CommandParameter="{Binding AppUpdateUrl}" Visibility="{Binding AppUpdateUrl, Converter={StaticResource Vis}}" />
                         <Border Height="12" Visibility="{Binding AppUpdateUrl, Converter={StaticResource Vis}, ConverterParameter=not}" />
 
@@ -423,36 +435,6 @@
                         </StackPanel>
                     </StackPanel>
 
-                    <!-- ============ About ============ -->
-                    <StackPanel Visibility="{Binding IsAboutPage, Converter={StaticResource Vis}}">
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
-                            <Image Source="pack://application:,,,/Assets/app.ico" Width="48" Height="48" RenderOptions.BitmapScalingMode="HighQuality" />
-                            <StackPanel Margin="14,0,0,0" VerticalAlignment="Center">
-                                <TextBlock Style="{StaticResource PageTitle}" Text="Clash Tracker" />
-                                <TextBlock Style="{StaticResource Muted}" Margin="0,2,0,0" Text="{Binding VersionText}" />
-                            </StackPanel>
-                        </StackPanel>
-                        <TextBlock Style="{StaticResource Body}"
-                                   Text="An overlay that shows what is left to upgrade in Clash of Clans. Free and open source under the MIT licence." />
-                        <Button Margin="0,8,0,0" HorizontalAlignment="Left" Style="{StaticResource LinkButton}" Content="{Binding RepositoryUrl}"
-                                Command="{Binding OpenLinkCommand}" CommandParameter="{Binding RepositoryUrl}" Visibility="{Binding RepositoryUrl, Converter={StaticResource Vis}}" />
-
-                        <TextBlock Style="{StaticResource SectionTitle}" Margin="0,22,0,6" Text="Where the data comes from" />
-                        <TextBlock Style="{StaticResource Body}" Text="Player, clan and war data: the official Clash of Clans API, with your own key." />
-                        <TextBlock Style="{StaticResource Body}" Margin="0,6,0,0" Text="Building, trap and wall levels: the game's own data export, which you copy in the game." />
-                        <TextBlock Style="{StaticResource Body}" Margin="0,6,0,0" Text="Upgrade costs, times and images: the ClashKing project (GPL-3.0), downloaded when needed." />
-                        <Button Margin="0,4,0,0" HorizontalAlignment="Left" Style="{StaticResource LinkButton}" Content="github.com/ClashKingInc/ClashKingAssets"
-                                Command="{Binding OpenLinkCommand}" CommandParameter="https://github.com/ClashKingInc/ClashKingAssets" />
-                        <TextBlock Style="{StaticResource Body}" Margin="0,10,0,0" Text="Font: Inter by Rasmus Andersson, under the SIL Open Font License 1.1." />
-
-                        <TextBlock Style="{StaticResource SectionTitle}" Margin="0,22,0,6" Text="Fan content" />
-                        <TextBlock Style="{StaticResource Body}"
-                                   Text="This material is unofficial and is not endorsed by Supercell. For more information see Supercell's Fan Content Policy." />
-                        <Button Margin="0,4,0,0" HorizontalAlignment="Left" Style="{StaticResource LinkButton}" Content="www.supercell.com/fan-content-policy"
-                                Command="{Binding OpenLinkCommand}" CommandParameter="https://www.supercell.com/fan-content-policy" />
-                        <TextBlock Style="{StaticResource Body}" Margin="0,10,0,0"
-                                   Text="Clash Tracker is not affiliated with, endorsed, sponsored or approved by Supercell. Clash of Clans and its artwork are trademarks and copyright of Supercell." />
-                    </StackPanel>
                 </Grid>
             </ScrollViewer>
         </DockPanel>

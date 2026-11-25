@@ -5,26 +5,40 @@ namespace ClashOverlay.App.Services;
 
 /// <summary>
 /// Notices when the API key stops working: the public IP changed (keys are locked to IP addresses) or the key was
-/// refused. Shows a tray alert that opens the key steps, or, when the user opted in, makes a key for the new address
-/// with their saved developer-site login.
+/// refused. It puts a line at the top of the tray menu (<see cref="Attention"/>) that opens the key steps, or, when
+/// the user opted in, makes a key for the new address with their saved developer-site login. The overlay shows the
+/// same problem in its notice line. Saving a new key clears it.
 /// </summary>
 internal sealed class KeyWatcher
 {
     private readonly AppHost _host;
-    private readonly Action<string, string, Action?, bool> _notify;
-    private readonly Action _openKeySteps;
     private readonly ILogger _log;
     private bool _making;
 
-    /// <param name="notify">Tray balloon: title, text, click action, warning.</param>
-    public KeyWatcher(AppHost host, Action<string, string, Action?, bool> notify, Action openKeySteps)
+    public KeyWatcher(AppHost host, Action openKeySteps)
     {
         _host = host;
-        _notify = notify;
-        _openKeySteps = openKeySteps;
+        OpenKeySteps = openKeySteps;
         _log = host.Loggers.CreateLogger("KeyWatcher");
         var ui = System.Windows.Application.Current.Dispatcher;
         host.Api.KeyProblem += (_, e) => ui.BeginInvoke(() => _ = OnKeyProblemAsync(e));
+        host.Keys.Changed += (_, _) => ui.BeginInvoke(() => SetAttention(null));
+    }
+
+    /// <summary>A short line about a key problem for the tray menu, or null.</summary>
+    public string? Attention { get; private set; }
+
+    public Action OpenKeySteps { get; }
+
+    public event EventHandler? AttentionChanged;
+
+    private void SetAttention(string? text)
+    {
+        if (Attention != text)
+        {
+            Attention = text;
+            AttentionChanged?.Invoke(this, EventArgs.Empty);
+        }
     }
 
     /// <summary>At start-up: tell the user before the first call fails when the key does not cover this PC's address.</summary>
@@ -63,7 +77,8 @@ internal sealed class KeyWatcher
                 await OnIpChangedAsync(ip);
                 break;
             case ApiErrorKind.InvalidKey:
-                _notify("API key refused", "The Clash of Clans API refused the saved key. Click to set up a new one.", _openKeySteps, true);
+                _log.LogInformation("The API refused the saved key");
+                SetAttention("API key refused: make a new one…");
                 break;
         }
     }
@@ -76,13 +91,13 @@ internal sealed class KeyWatcher
             {
                 _making = true;
                 var message = await MakeKeyAsync(login, ip, CancellationToken.None);
-                _notify("New API key", message + " Clash Tracker made it with your saved developer-site login.", null, false);
+                _log.LogInformation("{Message} (automatic, with the saved developer-site login)", message);
                 return;
             }
             catch (Exception ex) when (ex is DeveloperSiteException or HttpRequestException or TaskCanceledException)
             {
                 _log.LogWarning("Automatic key failed: {Message}", ex.Message);
-                _notify("Your IP address changed", $"Making a new key automatically failed: {ex.Message} Click to make one by hand.", _openKeySteps, true);
+                SetAttention("Your IP address changed: make a new API key…");
                 return;
             }
             finally
@@ -91,8 +106,7 @@ internal sealed class KeyWatcher
             }
         }
 
-        var address = ip is null ? "this PC's new address" : ip;
-        _notify("Your IP address changed", $"Your API key doesn't allow {address}. Click to make a new key for it.", _openKeySteps, true);
+        SetAttention("Your IP address changed: make a new API key…");
     }
 
     /// <summary>

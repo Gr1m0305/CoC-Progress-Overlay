@@ -42,7 +42,11 @@ internal sealed class GameDetector : IDisposable
 
     public IntPtr Foreground { get; private set; }
 
-    public bool IsGameForeground => Game is not null && Foreground == Game.Window.Handle;
+    /// <summary>
+    /// The game's window, or another window of the game's process (a dialog, or the frame around the game view), is
+    /// the foreground window.
+    /// </summary>
+    public bool IsGameForeground => Game is { } g && BelongsToGame(Foreground, g);
 
     public bool IsGameMinimised => Game is not null && IsIconic(Game.Window.Handle);
 
@@ -111,35 +115,31 @@ internal sealed class GameDetector : IDisposable
                 }
             }
 
-            if (Game is null)
+            if (_pinned != IntPtr.Zero && !IsWindow(_pinned))
             {
-                if (_pinned != IntPtr.Zero && !IsWindow(_pinned))
-                {
-                    _pinned = IntPtr.Zero;
-                }
+                _pinned = IntPtr.Zero;
+            }
 
-                var fg = NativeWindows.Describe(Foreground);
-                if (fg is not null && !NativeWindows.IsOwnProcess(fg.Handle) && MatchRule(fg) is { } rule)
+            var foregroundNow = GetForegroundWindow();
+            if (ForegroundMatch(foregroundNow) is { } front)
+            {
+                SetGame(front);
+            }
+            else if (Game is null)
+            {
+                foreach (var w in NativeWindows.TopLevel())
                 {
-                    SetGame(new GameWindow(fg, rule));
-                }
-                else
-                {
-                    foreach (var w in NativeWindows.TopLevel())
+                    if (MatchRule(w) is { } r)
                     {
-                        if (MatchRule(w) is { } r)
-                        {
-                            SetGame(new GameWindow(w, r));
-                            break;
-                        }
+                        SetGame(new GameWindow(w, r));
+                        break;
                     }
                 }
             }
 
-            var foreground = GetForegroundWindow();
-            if (foreground != Foreground)
+            if (foregroundNow != Foreground)
             {
-                Foreground = foreground;
+                Foreground = foregroundNow;
                 Changed?.Invoke(this, EventArgs.Empty);
             }
         }
@@ -147,6 +147,43 @@ internal sealed class GameDetector : IDisposable
         {
             _log.LogWarning(e, "Game window check failed");
         }
+    }
+
+    /// <summary>
+    /// The foreground window as the game, when it matches a rule and is not already the game (or part of it). A
+    /// picked window stays in use while it exists.
+    /// </summary>
+    private GameWindow? ForegroundMatch(IntPtr hwnd)
+    {
+        if (hwnd == IntPtr.Zero || NativeWindows.IsOwnProcess(hwnd))
+        {
+            return null;
+        }
+
+        if (Game is { } g && (BelongsToGame(hwnd, g) || (_pinned != IntPtr.Zero && g.Window.Handle == _pinned)))
+        {
+            return null;
+        }
+
+        var root = GetAncestor(hwnd, GA_ROOTOWNER);
+        var w = NativeWindows.Describe(root != IntPtr.Zero ? root : hwnd);
+        return w is not null && w.Title.Length > 0 && MatchRule(w) is { } rule ? new GameWindow(w, rule) : null;
+    }
+
+    private static bool BelongsToGame(IntPtr hwnd, GameWindow game)
+    {
+        if (hwnd == IntPtr.Zero)
+        {
+            return false;
+        }
+
+        if (hwnd == game.Window.Handle || GetAncestor(hwnd, GA_ROOTOWNER) == game.Window.Handle)
+        {
+            return true;
+        }
+
+        GetWindowThreadProcessId(hwnd, out var pid);
+        return pid == game.Window.ProcessId;
     }
 
     private void SetGame(GameWindow? game)
@@ -188,9 +225,9 @@ internal sealed class GameDetector : IDisposable
         {
             case EVENT_SYSTEM_FOREGROUND:
                 Foreground = hwnd;
-                if (Game is null && !NativeWindows.IsOwnProcess(hwnd) && NativeWindows.Describe(hwnd) is { } w && MatchRule(w) is { } rule)
+                if (ForegroundMatch(hwnd) is { } found && found.Window.Handle != Game?.Window.Handle)
                 {
-                    SetGame(new GameWindow(w, rule));
+                    SetGame(found);
                 }
                 else
                 {

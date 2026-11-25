@@ -32,8 +32,6 @@
                     <Image Source="pack://application:,,,/Assets/app.ico" Width="26" Height="26" RenderOptions.BitmapScalingMode="HighQuality" />
                     <TextBlock Margin="10,0,0,0" VerticalAlignment="Center" Style="{StaticResource Strong}" FontSize="15" Text="Clash Tracker setup" />
                 </StackPanel>
-                <TextBlock DockPanel.Dock="Bottom" Style="{StaticResource Hint}" Margin="4,0,0,0"
-                           Text="Not affiliated with, endorsed, sponsored or approved by Supercell." />
                 <ListBox ItemsSource="{Binding Steps}" SelectedItem="{Binding SelectedStep, Mode=TwoWay}" Background="Transparent" BorderThickness="0"
                          ItemContainerStyle="{StaticResource NavItem}" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
                     <ListBox.ItemTemplate>
@@ -108,7 +106,7 @@
                                        Text="Create the key, open it, and copy the long token shown under Key. Then press Next." />
                         </Grid>
                         <TextBlock Style="{StaticResource Hint}" Margin="0,20,0,0"
-                                   Text="Keys only work from the addresses you list. If your internet provider gives you a new address, Clash Tracker tells you and brings you back here." />
+                                   Text="Keys only work from the addresses you list. If your internet provider gives you a new address, the overlay and the tray menu say so, and lead you back here." />
                     </StackPanel>
 
                     <!-- 2: paste and test -->

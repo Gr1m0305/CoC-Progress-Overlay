@@ -153,15 +153,80 @@ public sealed class ReleaseCheckerTests
         Assert.Equal("GitHub could not be reached.", result.Error);
     }
 
+    private const string SetupHash = "265a4b4c0e3c10c1fe30f66837d7aa5b0587637ef84264079f72c3570ba8562a";
+
+    private static string Asset(string name, string? url = null, string? digest = null, long size = 1000, string state = "uploaded") => $$"""
+        {
+          "name": "{{name}}",
+          "state": "{{state}}",
+          "size": {{size}},
+          "digest": {{(digest is null ? "null" : $"\"{digest}\"")}},
+          "browser_download_url": "{{url ?? $"https://github.com/{Repo}/releases/download/v1.1.0/{name}"}}"
+        }
+        """;
+
+    private static string WithAssets(params string[] assets) =>
+        Release("v1.1.0").Replace("\"assets\": []", $"\"assets\": [{string.Join(",", assets)}]", StringComparison.Ordinal);
+
     [Fact]
-    public void Checks_are_due_once_a_day()
+    public void Installer_and_checksums_are_read_from_the_release()
     {
-        var now = new DateTimeOffset(2026, 12, 1, 12, 0, 0, TimeSpan.Zero);
-        Assert.True(ReleaseChecker.IsDue(null, now));
-        Assert.False(ReleaseChecker.IsDue(now.AddHours(-23), now));
-        Assert.True(ReleaseChecker.IsDue(now.AddHours(-24), now));
-        Assert.True(ReleaseChecker.IsDue(now.AddDays(-30), now));
-        Assert.False(ReleaseChecker.IsDue(now.AddMinutes(30), now));
-        Assert.True(ReleaseChecker.IsDue(now.AddDays(2), now));
+        var json = WithAssets(
+            Asset("ClashOverlay-1.1.0-portable.zip"),
+            Asset("ClashOverlay-Setup-1.1.0.exe", digest: "sha256:" + SetupHash.ToUpperInvariant(), size: 66604888),
+            Asset("SHA256SUMS.txt", size: 195));
+
+        var r = ReleaseChecker.ParseLatest(json, "https://example.invalid", Repo)!;
+
+        Assert.NotNull(r.Setup);
+        Assert.Equal("ClashOverlay-Setup-1.1.0.exe", r.Setup!.Name);
+        Assert.Equal($"https://github.com/{Repo}/releases/download/v1.1.0/ClashOverlay-Setup-1.1.0.exe", r.Setup.Url);
+        Assert.Equal(SetupHash, r.Setup.Sha256);
+        Assert.Equal(66604888, r.Setup.Size);
+        Assert.Equal("SHA256SUMS.txt", r.Checksums!.Name);
+        Assert.Null(r.Checksums.Sha256);
+    }
+
+    [Theory]
+    [InlineData("https://github.com/someone-else/repo/releases/download/v1.1.0/ClashOverlay-Setup-1.1.0.exe")]
+    [InlineData("https://example.com/example-owner/example-repo/releases/download/v1.1.0/ClashOverlay-Setup-1.1.0.exe")]
+    [InlineData("http://github.com/example-owner/example-repo/releases/download/v1.1.0/ClashOverlay-Setup-1.1.0.exe")]
+    [InlineData("https://github.com/example-owner/example-repo/releases/download/v1.0.0/ClashOverlay-Setup-1.1.0.exe")]
+    public void Installers_from_anywhere_else_are_ignored(string url)
+    {
+        var r = ReleaseChecker.ParseLatest(WithAssets(Asset("ClashOverlay-Setup-1.1.0.exe", url, "sha256:" + SetupHash)), "https://example.invalid", Repo)!;
+        Assert.Null(r.Setup);
+    }
+
+    [Fact]
+    public void Only_the_installer_for_that_version_counts()
+    {
+        var r = ReleaseChecker.ParseLatest(WithAssets(Asset("ClashOverlay-Setup-1.0.0.exe"), Asset("Other.exe")), "https://example.invalid", Repo)!;
+        Assert.Null(r.Setup);
+    }
+
+    [Fact]
+    public void Unfinished_uploads_and_odd_digests_are_ignored()
+    {
+        var r = ReleaseChecker.ParseLatest(WithAssets(Asset("ClashOverlay-Setup-1.1.0.exe", digest: "md5:abc"), Asset("SHA256SUMS.txt", state: "starter")), "https://example.invalid", Repo)!;
+        Assert.NotNull(r.Setup);
+        Assert.Null(r.Setup!.Sha256);
+        Assert.Null(r.Checksums);
+    }
+
+    [Fact]
+    public void Without_a_repository_no_files_are_read()
+    {
+        var r = ReleaseChecker.ParseLatest(WithAssets(Asset("ClashOverlay-Setup-1.1.0.exe", digest: "sha256:" + SetupHash)), "https://example.invalid")!;
+        Assert.Null(r.Setup);
+    }
+
+    [Fact]
+    public async Task The_check_reads_the_files_too()
+    {
+        var (checker, _) = Make(h => h.OnJson(Latest, WithAssets(Asset("ClashOverlay-Setup-1.1.0.exe", digest: "sha256:" + SetupHash))));
+        var result = await checker.CheckAsync("1.0.0");
+        Assert.Equal(ReleaseCheckOutcome.UpdateAvailable, result.Outcome);
+        Assert.Equal(SetupHash, result.Latest!.Setup!.Sha256);
     }
 }

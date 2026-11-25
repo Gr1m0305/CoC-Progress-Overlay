@@ -17,45 +17,47 @@ internal sealed class TrayActions
 
     public Action? OpenSettings { get; init; }
 
-    public Action? CheckForUpdates { get; init; }
-
-    public required Action Preview { get; init; }
+    public Action? UpdateContent { get; init; }
 
     public required Action OpenLogs { get; init; }
 
-    public Action? About { get; init; }
-
     public required Action Exit { get; init; }
-
-    public required Func<string> ToggleHint { get; init; }
 
     /// <summary>The key that jumps to account n (1-9), shown beside it in the menu.</summary>
     public Func<int, string>? AccountHint { get; init; }
 }
 
-/// <summary>The notification-area icon and its menu (WinForms, the only WinForms use in the app).</summary>
+/// <summary>
+/// The notification-area icon and its menu (WinForms, the only WinForms use in the app). Things that need the user
+/// (setup not finished, a key problem, a new version) are lines at the top of the menu; the app shows no
+/// notifications.
+/// </summary>
 internal sealed class TrayIcon : IDisposable
 {
     private readonly NotifyIcon _icon;
     private readonly TrayActions _actions;
-    private readonly ToolStripMenuItem _toggle;
     private readonly ToolStripMenuItem _accounts;
+    private readonly ToolStripMenuItem _status;
     private readonly ToolStripMenuItem _update;
-    private readonly ToolStripSeparator _updateLine;
-    private Action? _balloonClick;
+    private readonly ToolStripSeparator _topLine;
+    private readonly string _tooltip;
+    private Action? _statusClick;
     private Action? _updateClick;
 
     public TrayIcon(TrayActions actions, string tooltip)
     {
         _actions = actions;
+        _tooltip = tooltip;
         var menu = new ContextMenuStrip { Renderer = new DarkRenderer(), ShowImageMargin = false, Font = new Font("Segoe UI", 9.5f) };
-        _toggle = new ToolStripMenuItem("Show overlay", null, (_, _) => actions.ToggleOverlay()) { Font = new Font("Segoe UI", 9.5f, System.Drawing.FontStyle.Bold) };
+        var toggle = new ToolStripMenuItem("Show / hide overlay", null, (_, _) => actions.ToggleOverlay()) { Font = new Font("Segoe UI", 9.5f, System.Drawing.FontStyle.Bold) };
         _accounts = new ToolStripMenuItem("Account");
-        _update = new ToolStripMenuItem("Update available", null, (_, _) => _updateClick?.Invoke()) { Visible = false };
-        _updateLine = new ToolStripSeparator { Visible = false };
+        _status = new ToolStripMenuItem("", null, (_, _) => _statusClick?.Invoke()) { Visible = false };
+        _update = new ToolStripMenuItem("", null, (_, _) => _updateClick?.Invoke()) { Visible = false };
+        _topLine = new ToolStripSeparator { Visible = false };
+        menu.Items.Add(_status);
         menu.Items.Add(_update);
-        menu.Items.Add(_updateLine);
-        menu.Items.Add(_toggle);
+        menu.Items.Add(_topLine);
+        menu.Items.Add(toggle);
         menu.Items.Add(_accounts);
         menu.Items.Add(new ToolStripSeparator());
         if (actions.ImportExport is { } import)
@@ -68,18 +70,12 @@ internal sealed class TrayIcon : IDisposable
             menu.Items.Add(new ToolStripMenuItem("Settings…", null, (_, _) => settings()));
         }
 
-        if (actions.CheckForUpdates is { } update)
+        if (actions.UpdateContent is { } update)
         {
             menu.Items.Add(new ToolStripMenuItem("Update game data and images", null, (_, _) => update()));
         }
 
-        menu.Items.Add(new ToolStripMenuItem("Preview with demo data", null, (_, _) => actions.Preview()));
         menu.Items.Add(new ToolStripMenuItem("Open log folder", null, (_, _) => actions.OpenLogs()));
-        if (actions.About is { } about)
-        {
-            menu.Items.Add(new ToolStripMenuItem("About Clash Tracker", null, (_, _) => about()));
-        }
-
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add(new ToolStripMenuItem("Exit", null, (_, _) => actions.Exit()));
         menu.Opening += (_, _) => Refresh();
@@ -87,7 +83,7 @@ internal sealed class TrayIcon : IDisposable
         _icon = new NotifyIcon
         {
             Icon = LoadIcon(),
-            Text = tooltip.Length > 63 ? tooltip[..63] : tooltip,
+            Text = Clip(tooltip),
             ContextMenuStrip = menu,
             Visible = true,
         };
@@ -98,20 +94,12 @@ internal sealed class TrayIcon : IDisposable
                 actions.ToggleOverlay();
             }
         };
-        _icon.BalloonTipClicked += (_, _) =>
-        {
-            var click = _balloonClick;
-            _balloonClick = null;
-            click?.Invoke();
-        };
-        _icon.BalloonTipClosed += (_, _) => _balloonClick = null;
     }
 
     public ContextMenuStrip Menu => _icon.ContextMenuStrip!;
 
     public void Refresh()
     {
-        _toggle.Text = $"Show / hide overlay\t{_actions.ToggleHint()}";
         _accounts.DropDownItems.Clear();
         var accounts = _actions.Accounts();
         _accounts.Visible = accounts.Count > 0;
@@ -129,22 +117,32 @@ internal sealed class TrayIcon : IDisposable
         }
     }
 
-    /// <summary>A Windows notification; <paramref name="onClick"/> runs if the user clicks it.</summary>
-    public void Notify(string title, string text, Action? onClick = null, bool warning = false)
+    /// <summary>A line at the top of the menu for something that needs the user, such as unfinished setup; null hides it.</summary>
+    public void ShowStatus(string? text, Action? onClick)
     {
-        _balloonClick = onClick;
-        _icon.ShowBalloonTip(8000, title, text, warning ? ToolTipIcon.Warning : ToolTipIcon.Info);
+        _status.Text = text ?? "";
+        _status.Visible = text is not null;
+        _statusClick = onClick;
+        UpdateTop();
     }
 
-    /// <summary>Shows a line at the top of the menu, such as "Update available: 1.2.0"; null hides it.</summary>
+    /// <summary>A line at the top of the menu about a new version; null hides it. Without a click action it is greyed out.</summary>
     public void ShowUpdate(string? text, Action? onClick)
     {
         _update.Text = text ?? "";
-        _update.Visible = _updateLine.Visible = text is not null;
+        _update.Visible = text is not null;
+        _update.Enabled = onClick is not null;
         _updateClick = onClick;
+        UpdateTop();
     }
 
-    public void SetTooltip(string text) => _icon.Text = text.Length > 63 ? text[..63] : text;
+    private void UpdateTop()
+    {
+        _topLine.Visible = _status.Visible || _update.Visible;
+        _icon.Text = Clip(_status.Visible ? $"{_tooltip}: {(_status.Text ?? "").TrimEnd('…')}" : _tooltip);
+    }
+
+    private static string Clip(string text) => text.Length > 63 ? text[..63] : text;
 
     private static Icon LoadIcon()
     {

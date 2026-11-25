@@ -6,10 +6,20 @@ using System.Text.RegularExpressions;
 
 namespace ClashOverlay.Core.Updates;
 
-/// <summary>A published release of Clash Tracker on GitHub.</summary>
-public sealed record ReleaseInfo(Version Version, string Tag, string Url, DateTimeOffset? PublishedAt)
+/// <summary>A file attached to a release. <see cref="Sha256"/> is GitHub's digest of it, in lower-case hex, when given.</summary>
+public sealed record ReleaseAsset(string Name, string Url, long Size, string? Sha256);
+
+/// <summary>
+/// A published release of Clash Tracker on GitHub, with its installer (<c>ClashOverlay-Setup-X.Y.Z.exe</c>) and
+/// checksum list (<c>SHA256SUMS.txt</c>) when the release has them.
+/// </summary>
+public sealed record ReleaseInfo(Version Version, string Tag, string Url, DateTimeOffset? PublishedAt, ReleaseAsset? Setup = null, ReleaseAsset? Checksums = null)
 {
     public string VersionText => Version.ToString(3);
+
+    public static string SetupName(Version version) => $"ClashOverlay-Setup-{version.ToString(3)}.exe";
+
+    public const string ChecksumsName = "SHA256SUMS.txt";
 }
 
 public enum ReleaseCheckOutcome
@@ -26,13 +36,11 @@ public sealed record ReleaseCheckResult(ReleaseCheckOutcome Outcome, ReleaseInfo
 
 /// <summary>
 /// Asks GitHub for the newest published release (one unauthenticated call to <c>releases/latest</c>, which leaves out
-/// drafts and pre-releases) and compares it with the running version. It only reads: nothing is downloaded or run.
+/// drafts and pre-releases) and compares it with the running version. It only reads; <see cref="UpdateDownloader"/>
+/// fetches the installer.
 /// </summary>
 public sealed partial class ReleaseChecker(HttpClient http, string repository)
 {
-    /// <summary>Automatic checks run at most this often.</summary>
-    public static readonly TimeSpan Interval = TimeSpan.FromDays(1);
-
     public string LatestUrl => $"https://api.github.com/repos/{repository}/releases/latest";
 
     public string ReleasesPage => $"https://github.com/{repository}/releases";
@@ -62,7 +70,7 @@ public sealed partial class ReleaseChecker(HttpClient http, string repository)
                 return new ReleaseCheckResult(ReleaseCheckOutcome.Failed, null, why);
             }
 
-            var latest = ParseLatest(await response.Content.ReadAsStringAsync(ct).ConfigureAwait(false), ReleasesPage);
+            var latest = ParseLatest(await response.Content.ReadAsStringAsync(ct).ConfigureAwait(false), ReleasesPage, repository);
             if (latest is null)
             {
                 return new ReleaseCheckResult(ReleaseCheckOutcome.NoRelease, null);
@@ -101,9 +109,10 @@ public sealed partial class ReleaseChecker(HttpClient http, string repository)
 
     /// <summary>
     /// Reads GitHub's release JSON. Drafts, pre-releases and tags that are not a version give null. The page link is
-    /// only used when it is on github.com; otherwise <paramref name="fallbackUrl"/>.
+    /// only used when it is on github.com; otherwise <paramref name="fallbackUrl"/>. With <paramref name="repository"/>
+    /// the installer and checksum files are picked up too, but only from that repository's own release downloads.
     /// </summary>
-    public static ReleaseInfo? ParseLatest(string json, string fallbackUrl)
+    public static ReleaseInfo? ParseLatest(string json, string fallbackUrl, string? repository = null)
     {
         using var doc = JsonDocument.Parse(json);
         var root = doc.RootElement;
@@ -128,12 +137,56 @@ public sealed partial class ReleaseChecker(HttpClient http, string repository)
             && DateTimeOffset.TryParse(p.GetString(), CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out var at)
                 ? at
                 : null;
-        return new ReleaseInfo(version, tag!, url, published);
+        ReleaseAsset? setup = null, sums = null;
+        if (IsValidRepository(repository) && root.TryGetProperty("assets", out var assets) && assets.ValueKind == JsonValueKind.Array)
+        {
+            var prefix = $"https://github.com/{repository}/releases/download/{tag}/";
+            foreach (var a in assets.EnumerateArray())
+            {
+                if (ReadAsset(a, prefix) is not { } asset)
+                {
+                    continue;
+                }
+
+                if (asset.Name == ReleaseInfo.SetupName(version))
+                {
+                    setup = asset;
+                }
+                else if (asset.Name == ReleaseInfo.ChecksumsName)
+                {
+                    sums = asset;
+                }
+            }
+        }
+
+        return new ReleaseInfo(version, tag!, url, published, setup, sums);
     }
 
-    /// <summary>True when the last check is a day old, missing, or in the future (the clock was set back).</summary>
-    public static bool IsDue(DateTimeOffset? last, DateTimeOffset now) =>
-        last is not { } l || now - l >= Interval || l - now > TimeSpan.FromHours(1);
+    /// <summary>An uploaded asset whose download link is exactly <paramref name="prefix"/> + its name.</summary>
+    private static ReleaseAsset? ReadAsset(JsonElement a, string prefix)
+    {
+        if (a.ValueKind != JsonValueKind.Object)
+        {
+            return null;
+        }
+
+        string? Text(string name) => a.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.String ? v.GetString() : null;
+        var name = Text("name");
+        var link = Text("browser_download_url");
+        var state = Text("state");
+        if (name is null || link is null || (state is not null && state != "uploaded")
+            || !string.Equals(link, prefix + Uri.EscapeDataString(name), StringComparison.Ordinal))
+        {
+            return null;
+        }
+
+        var size = a.TryGetProperty("size", out var z) && z.ValueKind == JsonValueKind.Number && z.TryGetInt64(out var n) ? n : -1;
+        var digest = Text("digest");
+        var sha = digest is not null && digest.StartsWith("sha256:", StringComparison.OrdinalIgnoreCase) && Sha256Pattern().IsMatch(digest[7..])
+            ? digest[7..].ToLowerInvariant()
+            : null;
+        return new ReleaseAsset(name, link, size, sha);
+    }
 
     private static bool Flag(JsonElement root, string name) =>
         root.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.True;
@@ -143,4 +196,7 @@ public sealed partial class ReleaseChecker(HttpClient http, string repository)
 
     [GeneratedRegex(@"^[A-Za-z0-9-]{1,39}/[A-Za-z0-9._-]{1,100}$", RegexOptions.CultureInvariant)]
     private static partial Regex RepositoryPattern();
+
+    [GeneratedRegex("^[0-9a-fA-F]{64}$", RegexOptions.CultureInvariant)]
+    internal static partial Regex Sha256Pattern();
 }

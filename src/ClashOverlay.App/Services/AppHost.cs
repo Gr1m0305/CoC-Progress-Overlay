@@ -40,7 +40,7 @@ internal sealed class AppHost : IDisposable
         Version = Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? "0.0.0-dev";
         GitHubRepository = Assembly.GetExecutingAssembly().GetCustomAttributes<AssemblyMetadataAttribute>()
             .FirstOrDefault(a => a.Key == "GitHubRepository")?.Value;
-        Loggers = AppLogging.Create(Paths.Logs, options.Verbose);
+        Loggers = AppLogging.Create(Paths.Logs, options.Verbose, options.Demo);
         Log = Loggers.CreateLogger("App");
         Log.LogInformation("Clash Tracker {Version} starting{Demo}", Version, options.Demo ? " in demo mode" : "");
 
@@ -93,7 +93,7 @@ internal sealed class AppHost : IDisposable
 
     public ContentUpdater Content { get; }
 
-    /// <summary>The once-a-day "is a newer Clash Tracker out" check.</summary>
+    /// <summary>The "is a newer Clash Tracker out" check at start-up, and installing it.</summary>
     public UpdateWatcher Updates { get; }
 
     public PublicIpService PublicIp { get; }
@@ -142,8 +142,7 @@ internal sealed class AppHost : IDisposable
         ],
         SelectedAccount = DemoData.MainTag,
         SetupCompleted = true,
-        ShowDetectionToast = false,
-        CheckForUpdates = false,
+        InstallUpdatesAutomatically = false,
     }.Normalize();
 
     public void Dispose()

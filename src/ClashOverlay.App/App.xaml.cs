@@ -35,6 +35,7 @@ public partial class App : Application
     private SetupWindow? _setup;
     private SettingsWindow? _settings;
     private ImportWindow? _import;
+    private string? _contentProblem;
 
     /// <summary>Images and data are checked again in the background when the last check is older than this.</summary>
     private static readonly TimeSpan ContentCheckInterval = TimeSpan.FromDays(7);
@@ -56,8 +57,14 @@ public partial class App : Application
         }), null, Timeout.Infinite, true);
 
         // One copy at a time (the installer closes it by this name). A demo runs beside the real app.
+        // Off-screen screenshots never show anything, so they run even beside an open demo.
         _mutex = new Mutex(true, options.Demo ? DemoMutexName : MutexName, out var first);
-        if (!first)
+        if (!first && options.ScreenshotDir is not null)
+        {
+            _mutex.Dispose();
+            _mutex = null;
+        }
+        else if (!first)
         {
             if (!options.Demo && EventWaitHandle.TryOpenExisting(ActivateEventName, out var other))
             {
@@ -91,16 +98,11 @@ public partial class App : Application
 
         _vm = new OverlayViewModel(_host);
         _detector = new GameDetector(() => _host.Settings.GameRules, _host.Loggers.CreateLogger("GameDetector"));
-        _hotkeys = new HotkeyManager(_host.Loggers.CreateLogger("Hotkeys"));
+        // A demo registers its keys normally instead of hooking the keyboard, so it never holds keys from other apps.
+        _hotkeys = new HotkeyManager(_host.Loggers.CreateLogger("Hotkeys"), useHook: !options.Demo);
         _overlay = new OverlayCoordinator(_host, _detector, _hotkeys, _vm);
         _tray = new TrayIcon(TrayActions(), options.Demo ? "Clash Tracker (demo)" : "Clash Tracker");
-        _overlay.GameDetected += (_, game) =>
-        {
-            if (_host.Settings.ShowDetectionToast)
-            {
-                _tray.Notify("Clash of Clans detected", $"Press {_host.Settings.Hotkeys.Toggle} to show Clash Tracker.");
-            }
-        };
+        _overlay.Arranged += (_, _) => _settings?.ViewModel.OverlayMoved();
         _overlay.Start();
 
         if (!options.Demo)
@@ -115,22 +117,22 @@ public partial class App : Application
             return;
         }
 
-        _keys = new KeyWatcher(_host, (title, text, click, warning) => _tray.Notify(title, text, click, warning), () => OpenSetup(1));
-        _host.Updates.AvailableChanged += (_, _) => ShowUpdateInTray();
-        _host.Updates.NewVersionFound += (_, release) => _tray.Notify(
-            $"Clash Tracker {release.VersionText} is out",
-            $"You have {_host.Version}. Click here to open the download page.",
-            () => Shell.Open(release.Url));
+        _keys = new KeyWatcher(_host, () => OpenSetup(1));
+        _keys.AttentionChanged += (_, _) => ShowStatusInTray();
+        _host.Keys.Changed += (_, _) => Dispatcher.BeginInvoke(ShowStatusInTray);
+        _host.SettingsChanged += (_, _) => ShowStatusInTray();
+        _host.Updates.Changed += (_, _) => ShowUpdateInTray();
+        _host.Updates.IsBusy = () => _overlay?.IsVisible == true;
+        ShowStatusInTray();
         ShowUpdateInTray();
+
+        // Checked once at start (at sign-in when Clash Tracker starts with Windows) and from Settings.
         _host.Updates.Start();
 
         if (!_host.Settings.SetupCompleted || !_host.Keys.HasKey)
         {
-            if (options.FromStartup)
-            {
-                _tray.Notify("Finish setting up Clash Tracker", "Click here to make your API key and add your accounts.", () => OpenSetup(1));
-            }
-            else
+            // Started with Windows: stay quiet in the tray, where the menu's first line opens setup.
+            if (!options.FromStartup)
             {
                 OpenSetup(1);
             }
@@ -148,26 +150,77 @@ public partial class App : Application
         _ = UpdateContentAtStart();
     }
 
+    /// <summary>The tray menu's first line: what needs the user now, if anything.</summary>
+    private void ShowStatusInTray()
+    {
+        var host = _host!;
+        if (_tray is null || host.IsDemo)
+        {
+            return;
+        }
+
+        if (!host.Settings.SetupCompleted || !host.Keys.HasKey)
+        {
+            _tray.ShowStatus("Finish setting up Clash Tracker…", () => OpenSetup(1));
+        }
+        else if (_keys?.Attention is { } attention)
+        {
+            _tray.ShowStatus(attention, _keys.OpenKeySteps);
+        }
+        else if (host.Content.IsRunning)
+        {
+            _tray.ShowStatus("Downloading game data and images…", null);
+        }
+        else if (_contentProblem is { } problem)
+        {
+            _tray.ShowStatus($"{problem}: try again…", () => _ = UpdateContentFromTray());
+        }
+        else
+        {
+            _tray.ShowStatus(null, null);
+        }
+    }
+
+    /// <summary>The tray menu's update line.</summary>
     private void ShowUpdateInTray()
     {
-        var release = _host!.Updates.Available;
-        _tray?.ShowUpdate(
-            release is null ? null : $"Update available: {release.VersionText}",
-            release is null ? null : () => Shell.Open(release.Url));
+        var updates = _host!.Updates;
+        if (_tray is null)
+        {
+            return;
+        }
+
+        if (updates.Available is not { } release)
+        {
+            _tray.ShowUpdate(null, null);
+            return;
+        }
+
+        switch (updates.State)
+        {
+            case UpdateState.Downloading:
+                _tray.ShowUpdate($"Downloading Clash Tracker {release.VersionText}…", null);
+                break;
+            case UpdateState.Installing:
+                _tray.ShowUpdate($"Installing Clash Tracker {release.VersionText}…", null);
+                break;
+            default:
+                _tray.ShowUpdate(
+                    updates.CanInstall ? $"Install Clash Tracker {release.VersionText}" : $"Download Clash Tracker {release.VersionText}…",
+                    updates.CanInstall ? () => _ = updates.InstallAsync() : () => Shell.Open(release.Url));
+                break;
+        }
     }
 
     private TrayActions TrayActions() => new()
     {
         ToggleOverlay = () => _overlay!.Toggle(),
-        ToggleHint = () => _host!.Settings.Hotkeys.Toggle,
         Accounts = () => _vm!.Accounts.Select(a => (a.Tag, string.IsNullOrEmpty(a.Hall) ? a.Name : $"{a.Name}  ({a.Hall})", a.IsSelected)).ToList(),
         SelectAccount = tag => _vm!.SelectAccount(_vm.Accounts.ToList().FindIndex(a => a.Tag == tag)),
         AccountHint = n => HotkeyPlan.AccountGesture(_host!.Settings.Hotkeys, n),
         ImportExport = _host!.IsDemo ? null : () => OpenImport(null),
         OpenSettings = () => OpenSettings(null),
-        CheckForUpdates = _host.IsDemo ? null : () => _ = UpdateContentFromTray(),
-        About = () => OpenSettings(SettingsViewModel.AboutPage),
-        Preview = StartDemo,
+        UpdateContent = _host.IsDemo ? null : () => _ = UpdateContentFromTray(),
         OpenLogs = () => OpenFolder(_host!.Paths.Logs),
         Exit = Shutdown,
     };
@@ -214,13 +267,10 @@ public partial class App : Application
 
             if (finished)
             {
-                _tray?.Notify("Clash Tracker is ready", $"Press {s.Hotkeys.Toggle} while the game is in front to show it. Clash Tracker stays here in the notification area.");
                 _ = _vm?.LoadAsync(force: true);
             }
-            else if (!s.SetupCompleted)
-            {
-                _tray?.Notify("Setup is not finished", "Click here to carry on. Clash Tracker needs an API key and at least one account.", () => OpenSetup(1));
-            }
+
+            ShowStatusInTray();
         };
         _setup = window;
         window.ShowOrActivate();
@@ -237,7 +287,6 @@ public partial class App : Application
 
         var actions = new SettingsActions
         {
-            Preview = StartDemo,
             OpenSetup = OpenSetup,
             OpenImport = OpenImport,
             Confirm = Confirm,
@@ -281,7 +330,7 @@ public partial class App : Application
 
     // ----- game data and images -----
 
-    /// <summary>First run: download data and images with notifications. Later: a quiet check once a week.</summary>
+    /// <summary>First run: download data and images. Later: a quiet check once a week. Progress shows in the tray menu.</summary>
     private async Task UpdateContentAtStart()
     {
         var host = _host!;
@@ -291,44 +340,26 @@ public partial class App : Application
             return;
         }
 
-        if (missing)
-        {
-            _tray?.Notify("Downloading game data", "Clash Tracker is downloading upgrade data and images. The first time takes a minute or two.");
-        }
-
-        var result = await host.Content.RunAsync(force: false);
-        host.Log.LogInformation("Start-up content check: {Title}. {Detail}", result.Title, result.Detail);
-        if (missing || !result.Ok)
-        {
-            _tray?.Notify(result.Ok ? "Game data is ready" : result.Title, result.Detail, null, !result.Ok);
-        }
+        await RunContentUpdate();
     }
 
     private async Task UpdateContentFromTray()
     {
-        var host = _host!;
-        if (host.Content.IsRunning)
+        if (!_host!.Content.IsRunning)
         {
-            _tray?.Notify("Already updating", host.Content.Status ?? "An update is running.");
-            return;
+            await RunContentUpdate();
         }
-
-        _tray?.Notify("Checking for updates", "Checking game data and images…");
-        var result = await host.Content.RunAsync(force: false);
-        _tray?.Notify(result.Title, result.Detail, null, !result.Ok);
     }
 
-    /// <summary>A second copy of the app in demo mode (no game, key or internet needed).</summary>
-    private void StartDemo()
+    private async Task RunContentUpdate()
     {
-        try
-        {
-            Process.Start(new ProcessStartInfo(Environment.ProcessPath!, "--demo") { UseShellExecute = false });
-        }
-        catch (Exception e) when (e is System.ComponentModel.Win32Exception or InvalidOperationException)
-        {
-            _host!.Log.LogWarning(e, "Could not start the demo");
-        }
+        var host = _host!;
+        var run = host.Content.RunAsync(force: false);
+        ShowStatusInTray();
+        var result = await run;
+        host.Log.LogInformation("Content check: {Title}. {Detail}", result.Title, result.Detail);
+        _contentProblem = result.Ok ? null : result.Title;
+        ShowStatusInTray();
     }
 
     internal static void OpenFolder(string path)

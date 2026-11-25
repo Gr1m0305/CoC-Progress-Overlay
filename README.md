@@ -19,6 +19,9 @@ It does this for the Main Village and the Builder Base, for as many accounts as 
 * **It never touches the game.** No injection, no memory reading, no input automation, no packet
   capture. The app finds the game's window by its title and process name and draws its own window
   on top. It reads nothing else from the game.
+* **It only listens for its own shortcuts.** So that Ctrl+R works while the game is in front,
+  Clash Tracker watches the keyboard for its own shortcuts, and only while they are needed. Every
+  other key goes straight to the game, and nothing you type is stored or sent anywhere.
 * **Two sanctioned data sources:**
   * The official Clash of Clans API, with a key you make yourself. It gives heroes, troops,
     spells, pets, equipment, your profile, your clan and wars.
@@ -66,16 +69,20 @@ Get-FileHash .\ClashOverlay-Setup-1.0.0.exe -Algorithm SHA256
 
 ### Updating
 
-Clash Tracker asks GitHub once a day whether a new version is out. You can turn this off in
-Settings → Data and updates, or press **Check now** there. When there is a new version:
+Clash Tracker checks GitHub for a new version each time it starts (when you sign in to Windows, if
+it starts with Windows) and when you press **Check now** in Settings → Data and updates.
 
-* You get one notification.
-* **Update available** appears at the top of the tray menu.
+When there is one, it downloads the new setup, checks it against the release's SHA-256 checksums
+and installs it quietly. Clash Tracker closes for a moment and starts again on the new version,
+keeping your settings, key, accounts and data. If the overlay is open, it waits until you close it.
+There are no pop-ups: the tray menu shows **Downloading…** or **Installing…** while it happens.
 
-Both only open the release page. Nothing is downloaded or installed for you.
+To decide yourself, turn off **Install updates automatically** in Settings → Data and updates. The
+tray menu and that page then show **Install vX.Y.Z** when a new version is out.
 
-To update, download the new `ClashOverlay-Setup-X.Y.Z.exe` and run it. It closes the running
-Clash Tracker, installs over the old version and keeps your settings, key, accounts and data.
+You can also update by hand: download the new `ClashOverlay-Setup-X.Y.Z.exe` and run it. It closes
+the running Clash Tracker and installs over the old version. Version 1.0.0 cannot update itself, so
+install 1.1.0 this way.
 
 ### Uninstalling
 
@@ -104,7 +111,8 @@ install:
   `%LOCALAPPDATA%\ClashOverlay` data folder as the installed copy. Only one copy runs at a time.
 * **To start it with Windows**, turn on Settings → Data and updates → Start Clash Tracker when I
   sign in. Windows then starts the copy you ran.
-* **To update it**, exit it from the tray and replace the exe.
+* **To update it**, exit it from the tray and replace the exe. The portable copy does not update
+  itself; when a new version is out, the tray menu shows **Download vX.Y.Z…**.
 * **To remove it**, exit it from the tray and delete its folder. Delete
   `%LOCALAPPDATA%\ClashOverlay` too if you want your data gone.
 
@@ -119,8 +127,12 @@ install:
 | **Esc** | Close the overlay |
 
 All keys can be changed in Settings → Hotkeys. While the overlay is hidden, Clash Tracker
-registers only the toggle key, and only while the game is in front, so every other key goes to
+listens only for the toggle key, and only while the game is in front, so every other key goes to
 the game as usual.
+
+**To move the overlay**, hold the left mouse button anywhere on it and drag. **To resize it**,
+drag one of its corners; it keeps its shape. Clash Tracker remembers where you left it. Settings →
+Overlay → **Reset position and size** puts it back.
 
 Main Village tabs:
 
@@ -159,8 +171,9 @@ The key is saved encrypted for your Windows account (DPAPI, current user). It is
 `settings.json` and never logged.
 
 **When your IP address changes**, the key stops working. Clash Tracker notices the
-`accessDenied.invalidIp` answer, or the new address at start-up, and shows a tray notification.
-Clicking the notification opens the key steps with the new address ready to copy. You can also
+`accessDenied.invalidIp` answer, or the new address at start-up, and says so at the top of the
+overlay and the tray menu. Clicking the line in the tray menu opens the key steps with the new
+address ready to copy. You can also
 turn on **Make keys automatically** in setup step 2. Clash Tracker then signs in to the developer
 site with your login when the address changes and creates a key for the new address, the same way
 the open-source [coc.py](https://github.com/mathsman5133/coc.py) library does. This is off unless
@@ -185,7 +198,7 @@ Clash Tracker looks for these windows by default:
 
 | Launcher | Process | Window title |
 | --- | --- | --- |
-| Google Play Games for PC | `crosvm.exe` | `Clash of Clans` |
+| Google Play Games for PC | `crosvm.exe` | `Clash of Clans*` |
 | BlueStacks | `HD-Player.exe` | any |
 | LDPlayer | `dnplayer.exe` | any |
 | MEmu | `MEmu.exe` | any |
@@ -193,6 +206,9 @@ Clash Tracker looks for these windows by default:
 | MuMu Player | `MuMuPlayer.exe` | any |
 | MuMu Player 12 | `MuMuNxDevice.exe` | any |
 | Anything else | any | `Clash of Clans` |
+
+Google Play Games adds your player name to the title (`Clash of Clans - Name`), which the `*`
+covers. When several windows match, the one you are using wins.
 
 If your launcher is not found, open Settings → Game detection and press **Pick game window**.
 Click the game within 15 seconds and Clash Tracker adds a rule for it. You can also edit the rules
@@ -208,7 +224,8 @@ Everything lives in `%LOCALAPPDATA%\ClashOverlay`:
 | `apikey.bin`, `devsite.bin` | The API key and the optional developer login, DPAPI-encrypted |
 | `accounts\<tag>\` | Your exports, manual changes and the last API answers |
 | `data\`, `assets\` | ClashKing game data and images |
-| `logs\` | Logs, kept for 14 days |
+| `updates\` | The setup of a new version while it installs |
+| `logs\` | Logs, kept for 14 days, and `update-install.log` from the last update |
 
 Clash Tracker only connects to:
 
@@ -216,13 +233,12 @@ Clash Tracker only connects to:
 * the developer site, if you turn on automatic keys
 * a public-IP lookup: ipify, with Amazon and icanhazip as fallbacks
 * the ClashKing download servers
-* GitHub, for the daily new-version check, if it is on
+* GitHub, to check for new versions and download them
 
 ## Trying it without a key
 
 `ClashOverlay.exe --demo` runs with a built-in TH19 account and a rushed TH13 account. It needs no
-key and leaves your own settings and accounts alone. **Preview with demo data** in the tray menu
-opens the same preview while the app is running.
+key and leaves your own settings and accounts alone.
 
 ## Building from source
 

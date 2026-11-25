@@ -53,6 +53,7 @@ internal static class ScreenshotRunner
         shots.Add(Save(frame, dir, "account-switcher.png"));
         vm.IsAccountMenuOpen = false;
         await Scenarios(host, vm, frame, dir, shots);
+        await TabClick(host, vm);
         vm.OnHidden();
 
         // Setup, one picture per step.
@@ -66,7 +67,7 @@ internal static class ScreenshotRunner
         }
 
         // Settings, one picture per page.
-        var actions = new SettingsActions { Preview = () => { }, OpenSetup = _ => { }, OpenImport = _ => { }, Confirm = (_, _) => false, OpenFolder = _ => { } };
+        var actions = new SettingsActions { OpenSetup = _ => { }, OpenImport = _ => { }, Confirm = (_, _) => false, OpenFolder = _ => { } };
         using var settingsVm = new SettingsViewModel(host, null, actions);
         var settings = Detach(new SettingsWindow(settingsVm), 960, 700);
         foreach (var section in settingsVm.Sections)
@@ -150,6 +151,66 @@ internal static class ScreenshotRunner
         {
             await Dispatcher.Yield(DispatcherPriority.ApplicationIdle);
             await Task.Delay(30);
+        }
+    }
+
+    /// <summary>
+    /// E2E: a press on a tab in the real overlay window selects it, although the overlay never has the keyboard focus.
+    /// The window is shown far off-screen and fully transparent, so nothing appears.
+    /// </summary>
+    private static async Task TabClick(AppHost host, OverlayViewModel vm)
+    {
+        var view = new OverlayView { DataContext = vm };
+        var window = new Overlay.OverlayWindow(view) { Left = -32000, Top = -32000, Width = 1260, Height = 760 };
+        window.Show();
+        try
+        {
+            vm.SelectedTab = vm.Tabs.FirstOrDefault();
+            await Settle();
+            var tabs = Descendants<ListBoxItem>(view).Where(i => i.DataContext is TabViewModel).ToList();
+            var target = tabs.LastOrDefault();
+            if (target is null)
+            {
+                host.Log.LogWarning("E2E tab click: no tabs found");
+                return;
+            }
+
+            var press = new System.Windows.Input.MouseButtonEventArgs(System.Windows.Input.Mouse.PrimaryDevice, Environment.TickCount, System.Windows.Input.MouseButton.Left)
+            {
+                RoutedEvent = UIElement.PreviewMouseDownEvent, // as real input: WPF raises the left-button events from it
+            };
+            target.RaiseEvent(press);
+            target.RaiseEvent(new System.Windows.Input.MouseButtonEventArgs(System.Windows.Input.Mouse.PrimaryDevice, Environment.TickCount, System.Windows.Input.MouseButton.Left)
+            {
+                RoutedEvent = UIElement.PreviewMouseUpEvent,
+            });
+            await Settle();
+            var ok = ReferenceEquals(vm.SelectedTab, target.DataContext);
+            var list = ItemsControl.ItemsControlFromItemContainer(target) as ListBox;
+            host.Log.Log(ok ? LogLevel.Information : LogLevel.Warning, "E2E tab click: pressed {Tab}, selected {Selected} (item selected {ItemSelected}, list has {ListSelected}, handled {Handled}): {Result}",
+                ((TabViewModel)target.DataContext).Title, vm.SelectedTab?.Title, target.IsSelected, (list?.SelectedItem as TabViewModel)?.Title, press.Handled, ok ? "ok" : "FAILED");
+        }
+        finally
+        {
+            window.Close();
+        }
+    }
+
+    private static IEnumerable<T> Descendants<T>(DependencyObject root)
+        where T : DependencyObject
+    {
+        for (var i = 0; i < VisualTreeHelper.GetChildrenCount(root); i++)
+        {
+            var child = VisualTreeHelper.GetChild(root, i);
+            if (child is T t)
+            {
+                yield return t;
+            }
+
+            foreach (var d in Descendants<T>(child))
+            {
+                yield return d;
+            }
         }
     }
 

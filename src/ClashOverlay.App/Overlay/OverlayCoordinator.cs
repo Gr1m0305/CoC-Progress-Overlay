@@ -4,6 +4,7 @@ using ClashOverlay.App.Native;
 using ClashOverlay.App.Services;
 using ClashOverlay.App.ViewModels;
 using ClashOverlay.App.Views;
+using ClashOverlay.Core.Display;
 using ClashOverlay.Core.Settings;
 using Microsoft.Extensions.Logging;
 
@@ -23,7 +24,6 @@ internal sealed class OverlayCoordinator : IDisposable
     private readonly ILogger _log;
     private readonly DispatcherTimer _moveDebounce;
     private OverlayWindow? _window;
-    private bool _toastShown;
 
     public OverlayCoordinator(AppHost host, GameDetector detector, HotkeyManager hotkeys, OverlayViewModel vm)
     {
@@ -43,7 +43,6 @@ internal sealed class OverlayCoordinator : IDisposable
         };
 
         _detector.Changed += (_, _) => OnGameChanged();
-        _detector.GameFound += (_, game) => OnGameFound(game);
         _detector.GameMoved += (_, _) =>
         {
             if (IsVisible && _host.Settings.Placement == OverlayPlacement.OverGameWindow)
@@ -67,10 +66,10 @@ internal sealed class OverlayCoordinator : IDisposable
         };
     }
 
-    /// <summary>The game was found for the first time this session.</summary>
-    public event EventHandler<GameWindow>? GameDetected;
-
     public bool IsVisible => _window?.IsShown == true;
+
+    /// <summary>The user moved or resized the overlay (the new place and scale are saved in settings).</summary>
+    public event EventHandler? Arranged;
 
     public void Start()
     {
@@ -92,7 +91,12 @@ internal sealed class OverlayCoordinator : IDisposable
 
     public void Show()
     {
-        _window ??= new OverlayWindow(new OverlayView { DataContext = _vm });
+        if (_window is null)
+        {
+            _window = new OverlayWindow(new OverlayView { DataContext = _vm });
+            _window.Arranged += (_, bounds) => OnArranged(bounds);
+        }
+
         Place();
         _window.FadeIn();
         _vm.OnShown();
@@ -115,20 +119,23 @@ internal sealed class OverlayCoordinator : IDisposable
 
     private void Place()
     {
+        var s = _host.Settings;
         var game = _detector.Game?.Window.Handle ?? IntPtr.Zero;
         var anchor = game != IntPtr.Zero ? game : NativeMethods.GetForegroundWindow();
-        _window!.Place(anchor, _detector.GameBounds, _host.Settings.Placement, _host.Settings.Scale);
+        var position = s.OverlayLeft is { } left && s.OverlayTop is { } top ? (left, top) : ((int, int)?)null;
+        _window!.Place(anchor, _detector.GameBounds, s.Placement, s.Scale, position);
     }
 
-    private void OnGameFound(GameWindow game)
+    /// <summary>Keeps where the user dragged the overlay, and the size a corner drag gave it.</summary>
+    private void OnArranged(PixelRect bounds)
     {
-        if (_toastShown || _host.IsDemo)
-        {
-            return;
-        }
-
-        _toastShown = true;
-        GameDetected?.Invoke(this, game);
+        var s = _host.Settings;
+        s.OverlayLeft = bounds.Left;
+        s.OverlayTop = bounds.Top;
+        s.Scale = Math.Clamp(_window!.ScaleFor(bounds), AppSettings.MinScale, AppSettings.MaxScale);
+        _log.LogDebug("Overlay arranged at {Bounds}, scale {Scale:0.00}", bounds, s.Scale);
+        _host.SaveSettings();
+        Arranged?.Invoke(this, EventArgs.Empty);
     }
 
     private void OnGameChanged()

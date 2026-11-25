@@ -67,13 +67,16 @@ public sealed class GameWindowRule
         return Regex.IsMatch(text, regex, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(50));
     }
 
+    /// <summary>The title Google Play Games gives the game's window: "Clash of Clans", or "Clash of Clans - player name".</summary>
+    public const string GameTitlePattern = "Clash of Clans*";
+
     /// <summary>
-    /// Google Play Games for PC runs the game in <c>crosvm.exe</c> with the window titled "Clash of Clans". Emulators
-    /// title their window after the emulator, so those rules match the emulator window.
+    /// Google Play Games for PC runs the game in <c>crosvm.exe</c> with the window titled "Clash of Clans - player
+    /// name". Emulators title their window after the emulator, so those rules match the emulator window.
     /// </summary>
     public static List<GameWindowRule> Defaults() =>
     [
-        new() { Name = "Google Play Games", ProcessName = "crosvm", TitlePattern = "Clash of Clans" },
+        new() { Name = "Google Play Games", ProcessName = "crosvm", TitlePattern = GameTitlePattern },
         new() { Name = "BlueStacks", ProcessName = "HD-Player", TitlePattern = "*" },
         new() { Name = "LDPlayer", ProcessName = "dnplayer", TitlePattern = "*" },
         new() { Name = "MEmu", ProcessName = "MEmu", TitlePattern = "*" },
@@ -82,6 +85,48 @@ public sealed class GameWindowRule
         new() { Name = "MuMu Player 12", ProcessName = "MuMuNxDevice", TitlePattern = "*" },
         new() { Name = "Any window titled Clash of Clans", ProcessName = null, TitlePattern = "Clash of Clans" },
     ];
+
+    /// <summary>
+    /// The pattern to save for a window the user picked. Google Play Games puts the player's name in the title, so a
+    /// picked "Clash of Clans - name" window is saved as "Clash of Clans*" and still matches after switching accounts.
+    /// </summary>
+    public static string PatternForPicked(string title) =>
+        title.StartsWith("Clash of Clans", StringComparison.OrdinalIgnoreCase) ? GameTitlePattern : title;
+
+    /// <summary>
+    /// Rules saved by 1.0.0 that only matched the exact title "Clash of Clans" (or one player's name) are widened to
+    /// "Clash of Clans*". Returns true when something changed.
+    /// </summary>
+    public static bool Upgrade(List<GameWindowRule> rules)
+    {
+        var changed = false;
+        foreach (var r in rules)
+        {
+            var title = r.TitlePattern?.Trim() ?? "";
+            var crosvm = string.Equals(r.ProcessName?.Trim(), "crosvm", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(r.ProcessName?.Trim(), "crosvm.exe", StringComparison.OrdinalIgnoreCase);
+            var oldDefault = crosvm && r.Name == "Google Play Games" && title == "Clash of Clans";
+            var oldPick = r.Name.StartsWith("Picked: ", StringComparison.Ordinal)
+                && title.StartsWith("Clash of Clans - ", StringComparison.OrdinalIgnoreCase)
+                && !title.Contains('*') && !title.Contains('?');
+            if (oldDefault || oldPick)
+            {
+                r.TitlePattern = GameTitlePattern;
+                if (oldPick)
+                {
+                    r.Name = "Picked: Clash of Clans";
+                }
+
+                changed = true;
+            }
+        }
+
+        // Two picks of the same game, now identical: keep the first.
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var before = rules.Count;
+        rules.RemoveAll(r => r.Name.StartsWith("Picked: ", StringComparison.Ordinal) && !seen.Add($"{r.ProcessName}|{r.TitlePattern}"));
+        return changed || rules.Count != before;
+    }
 }
 
 public sealed class HotkeySettings
@@ -136,8 +181,12 @@ public sealed class AppSettings
 
     public OverlayPlacement Placement { get; set; } = OverlayPlacement.CenterOnGameMonitor;
 
-    /// <summary>0.75–1.5.</summary>
+    /// <summary>0.5–2 (<see cref="MinScale"/> to <see cref="MaxScale"/>).</summary>
     public double Scale { get; set; } = 1.0;
+
+    public const double MinScale = 0.5;
+
+    public const double MaxScale = 2.0;
 
     /// <summary>Opacity of the glass panel behind the text, 0.5–1.</summary>
     public double PanelOpacity { get; set; } = 0.86;
@@ -152,9 +201,16 @@ public sealed class AppSettings
 
     public bool HideWhenGameMinimised { get; set; } = true;
 
-    public bool ShowDetectionToast { get; set; } = true;
+    /// <summary>
+    /// Where the user dragged the overlay: its top-left corner in physical screen pixels. Null places it by
+    /// <see cref="Placement"/>. Dragging a corner changes <see cref="Scale"/>.
+    /// </summary>
+    public int? OverlayLeft { get; set; }
 
-    public bool CheckForUpdates { get; set; } = true;
+    public int? OverlayTop { get; set; }
+
+    /// <summary>Download and install a new version as soon as the check at start-up (or "Check now") finds one.</summary>
+    public bool InstallUpdatesAutomatically { get; set; } = true;
 
     public DateTimeOffset? LastUpdateCheck { get; set; }
 
@@ -163,8 +219,13 @@ public sealed class AppSettings
 
     public string? UpdateUrl { get; set; }
 
-    /// <summary>The release the tray note was shown for, so each new version is announced once.</summary>
-    public string? UpdateNotifiedTag { get; set; }
+    /// <summary>
+    /// The release an automatic install was last started for, and when. If this copy is still older a day later the
+    /// install did not finish, and it is not tried again by itself (the tray and Settings still offer it).
+    /// </summary>
+    public string? UpdateAttemptTag { get; set; }
+
+    public DateTimeOffset? UpdateAttemptAt { get; set; }
 
     /// <summary>Off by default: create and rotate keys on the developer site with the saved login.</summary>
     public bool DeveloperSiteAutoKey { get; set; }
@@ -178,7 +239,7 @@ public sealed class AppSettings
 
     public AppSettings Normalize()
     {
-        Scale = double.IsFinite(Scale) ? Math.Clamp(Scale, 0.75, 1.5) : 1.0;
+        Scale = double.IsFinite(Scale) ? Math.Clamp(Scale, MinScale, MaxScale) : 1.0;
         PanelOpacity = double.IsFinite(PanelOpacity) ? Math.Clamp(PanelOpacity, 0.5, 1.0) : 0.86;
         if (BuildersOverride is < 1 or > 12)
         {
@@ -187,6 +248,13 @@ public sealed class AppSettings
 
         Hotkeys ??= new HotkeySettings();
         GameRules ??= GameWindowRule.Defaults();
+        GameWindowRule.Upgrade(GameRules);
+        if (OverlayLeft is null || OverlayTop is null)
+        {
+            OverlayLeft = null;
+            OverlayTop = null;
+        }
+
         var seen = new HashSet<string>(StringComparer.Ordinal);
         Accounts = (Accounts ?? [])
             .Select(a =>

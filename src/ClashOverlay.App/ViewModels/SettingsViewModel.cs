@@ -16,9 +16,6 @@ namespace ClashOverlay.App.ViewModels;
 /// <summary>What the settings window asks the app to do.</summary>
 internal sealed class SettingsActions
 {
-    /// <summary>The overlay with demo data (a second copy of the app).</summary>
-    public required Action Preview { get; init; }
-
     /// <summary>Opens first-run setup at a step (1 = make a key, 2 = paste it or save the developer login).</summary>
     public required Action<int> OpenSetup { get; init; }
 
@@ -47,7 +44,6 @@ internal sealed partial class SettingsViewModel : ObservableObject, IDisposable
     public const string KeyPage = "key";
     public const string DetectionPage = "detection";
     public const string DataPage = "data";
-    public const string AboutPage = "about";
 
     private readonly AppHost _host;
     private readonly GameDetector? _detector;
@@ -79,6 +75,7 @@ internal sealed partial class SettingsViewModel : ObservableObject, IDisposable
             detector.Changed += OnDetectorChanged;
         }
 
+        host.Updates.Changed += OnUpdatesChanged;
         _appUpdateStatus = AppUpdateSummary();
         _ = FindIpAsync();
     }
@@ -97,11 +94,10 @@ internal sealed partial class SettingsViewModel : ObservableObject, IDisposable
         new(KeyPage, "API key"),
         new(DetectionPage, "Game detection"),
         new(DataPage, "Data and updates"),
-        new(AboutPage, "About"),
     ];
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(IsOverlayPage), nameof(IsHotkeysPage), nameof(IsAccountsPage), nameof(IsKeyPage), nameof(IsDetectionPage), nameof(IsDataPage), nameof(IsAboutPage))]
+    [NotifyPropertyChangedFor(nameof(IsOverlayPage), nameof(IsHotkeysPage), nameof(IsAccountsPage), nameof(IsKeyPage), nameof(IsDetectionPage), nameof(IsDataPage))]
     private SettingsSection _section;
 
     public bool IsOverlayPage => Section.Key == OverlayPage;
@@ -115,8 +111,6 @@ internal sealed partial class SettingsViewModel : ObservableObject, IDisposable
     public bool IsDetectionPage => Section.Key == DetectionPage;
 
     public bool IsDataPage => Section.Key == DataPage;
-
-    public bool IsAboutPage => Section.Key == AboutPage;
 
     public void ShowPage(string? key)
     {
@@ -146,6 +140,14 @@ internal sealed partial class SettingsViewModel : ObservableObject, IDisposable
     }
 
     // ----- saving -----
+
+    private void Raise(params string[] properties)
+    {
+        foreach (var p in properties)
+        {
+            OnPropertyChanged(p);
+        }
+    }
 
     /// <summary>Notifies the properties and saves after a short pause.</summary>
     private void Changed(params string[] properties)
@@ -189,7 +191,8 @@ internal sealed partial class SettingsViewModel : ObservableObject, IDisposable
             if (value)
             {
                 S.Placement = OverlayPlacement.CenterOnGameMonitor;
-                Changed(nameof(PlaceOnGameMonitor), nameof(PlaceOverGame));
+                S.OverlayLeft = S.OverlayTop = null;
+                Changed(nameof(PlaceOnGameMonitor), nameof(PlaceOverGame), nameof(HasCustomPosition));
             }
         }
     }
@@ -202,7 +205,8 @@ internal sealed partial class SettingsViewModel : ObservableObject, IDisposable
             if (value)
             {
                 S.Placement = OverlayPlacement.OverGameWindow;
-                Changed(nameof(PlaceOnGameMonitor), nameof(PlaceOverGame));
+                S.OverlayLeft = S.OverlayTop = null;
+                Changed(nameof(PlaceOnGameMonitor), nameof(PlaceOverGame), nameof(HasCustomPosition));
             }
         }
     }
@@ -212,12 +216,32 @@ internal sealed partial class SettingsViewModel : ObservableObject, IDisposable
         get => S.Scale;
         set
         {
-            S.Scale = Math.Clamp(Math.Round(value / 0.05) * 0.05, 0.75, 1.5);
-            Changed(nameof(Scale), nameof(ScaleText));
+            S.Scale = Math.Clamp(Math.Round(value / 0.05) * 0.05, AppSettings.MinScale, AppSettings.MaxScale);
+            Changed(nameof(Scale), nameof(ScaleText), nameof(HasCustomPosition));
         }
     }
 
     public string ScaleText => Percent(S.Scale);
+
+    public double MinScale => AppSettings.MinScale;
+
+    public double MaxScale => AppSettings.MaxScale;
+
+    /// <summary>The overlay was dragged somewhere or resized by hand.</summary>
+    public bool HasCustomPosition => S.OverlayLeft is not null || Math.Abs(S.Scale - 1.0) > 0.001;
+
+    /// <summary>Back to the chosen placement at 100%.</summary>
+    [RelayCommand]
+    private void ResetOverlayPosition()
+    {
+        S.OverlayLeft = null;
+        S.OverlayTop = null;
+        S.Scale = 1.0;
+        Changed(nameof(Scale), nameof(ScaleText), nameof(HasCustomPosition));
+    }
+
+    /// <summary>Called when the overlay was dragged or resized while this window is open.</summary>
+    public void OverlayMoved() => Raise(nameof(Scale), nameof(ScaleText), nameof(HasCustomPosition));
 
     public double PanelOpacity
     {
@@ -238,16 +262,6 @@ internal sealed partial class SettingsViewModel : ObservableObject, IDisposable
         {
             S.HideWhenGameMinimised = value;
             Changed(nameof(HideWhenGameMinimised));
-        }
-    }
-
-    public bool ShowDetectionToast
-    {
-        get => S.ShowDetectionToast;
-        set
-        {
-            S.ShowDetectionToast = value;
-            Changed(nameof(ShowDetectionToast));
         }
     }
 
@@ -341,9 +355,6 @@ internal sealed partial class SettingsViewModel : ObservableObject, IDisposable
             Changed(nameof(BuildersCount));
         }
     }
-
-    [RelayCommand]
-    private void Preview() => _actions.Preview();
 
     private static string Percent(double v) => $"{Math.Round(v * 100).ToString(CultureInfo.InvariantCulture)}%";
 
@@ -629,8 +640,9 @@ internal sealed partial class SettingsViewModel : ObservableObject, IDisposable
     public ObservableCollection<RuleRowViewModel> Rules { get; } = [];
 
     public string DetectionStatus => _detector?.Game is { } g
-        ? $"Found \"{g.Window.Title}\" ({g.Window.ProcessName}), matched by: {g.RuleName}."
-        : _detector is null ? "Detection is off in demo mode." : "The game is not running, or no rule matches its window.";
+        ? $"Found \"{g.Window.Title}\" ({g.Window.ProcessName}), matched by: {g.RuleName}. "
+          + (_detector.IsGameForeground ? $"It is in front now, so {S.Hotkeys.Toggle} shows the overlay." : $"Click the game, then press {S.Hotkeys.Toggle} to show the overlay.")
+        : _detector is null ? "Detection is off in demo mode." : "The game is not running, or no rule matches its window. Start the game, or use Pick game window.";
 
     [ObservableProperty]
     private string? _pickStatus;
@@ -715,9 +727,11 @@ internal sealed partial class SettingsViewModel : ObservableObject, IDisposable
             }
 
             var exe = picked.ProcessName.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) ? picked.ProcessName[..^4] : picked.ProcessName;
-            S.GameRules.RemoveAll(r => string.Equals(r.ProcessName, exe, StringComparison.OrdinalIgnoreCase) && r.TitlePattern == picked.Title);
-            var name = picked.Title.Length > 40 ? picked.Title[..40] + "…" : picked.Title;
-            S.GameRules.Insert(0, new GameWindowRule { Name = $"Picked: {name}", ProcessName = exe, TitlePattern = picked.Title });
+            var pattern = GameWindowRule.PatternForPicked(picked.Title);
+            S.GameRules.RemoveAll(r => string.Equals(r.ProcessName, exe, StringComparison.OrdinalIgnoreCase) && r.TitlePattern == pattern);
+            var shown = pattern == GameWindowRule.GameTitlePattern ? "Clash of Clans" : picked.Title;
+            var name = shown.Length > 40 ? shown[..40] + "…" : shown;
+            S.GameRules.Insert(0, new GameWindowRule { Name = $"Picked: {name}", ProcessName = exe, TitlePattern = pattern });
             RebuildRules();
             SaveNow();
             _detector!.Pin(picked.Handle);
@@ -800,15 +814,22 @@ internal sealed partial class SettingsViewModel : ObservableObject, IDisposable
         }
     }
 
-    public bool CheckForUpdates
+    public bool InstallUpdatesAutomatically
     {
-        get => S.CheckForUpdates;
+        get => S.InstallUpdatesAutomatically;
         set
         {
-            S.CheckForUpdates = value;
-            Changed(nameof(CheckForUpdates));
+            S.InstallUpdatesAutomatically = value;
+            Changed(nameof(InstallUpdatesAutomatically));
         }
     }
+
+    /// <summary>A portable copy (or one built from source) is told about new versions but never replaced.</summary>
+    public bool CanInstallUpdates => _host.Updates.CanInstall;
+
+    public string UpdatesHint => _host.Updates.CanInstall
+        ? "Clash Tracker checks for a new version when it starts (when you sign in to Windows) and when you press Check now. New versions install quietly and Clash Tracker starts again in the notification area. Turn this off to install them yourself from here or the tray menu."
+        : "Clash Tracker checks for a new version when it starts and when you press Check now. This copy was not installed with Clash Tracker's setup, so it cannot update itself: download the new version from the release page.";
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(CheckAppUpdateCommand))]
@@ -820,17 +841,54 @@ internal sealed partial class SettingsViewModel : ObservableObject, IDisposable
     /// <summary>The release page of a newer version, when one is known.</summary>
     public string? AppUpdateUrl => _host.Updates.Available?.Url;
 
+    /// <summary>A newer version is known and this copy can install it.</summary>
+    public bool CanInstallAppUpdate => _host.Updates is { Available: not null, CanInstall: true, State: UpdateState.Idle };
+
+    public string? InstallUpdateText => _host.Updates.Available is { } r ? $"Install {r.VersionText} now" : null;
+
     private string? AppUpdateSummary()
     {
-        if (_host.Updates.Available is { } r)
+        var u = _host.Updates;
+        if (u.Available is { } r)
         {
-            return $"Clash Tracker {r.VersionText} is out. You have {_host.Version}.";
+            return u.State switch
+            {
+                UpdateState.Downloading => $"Downloading Clash Tracker {r.VersionText}…",
+                UpdateState.Installing => $"Installing Clash Tracker {r.VersionText}. It starts again in a few seconds.",
+                _ => u.Problem ?? $"Clash Tracker {r.VersionText} is out. You have {_host.Version}.",
+            };
         }
 
-        return S.LastUpdateCheck is { } at ? $"Last checked {Fmt.Ago(_host.Time.GetUtcNow() - at)}." : null;
+        return S.LastUpdateCheck is { } at ? $"You have {_host.Version}. Last checked {Fmt.Ago(_host.Time.GetUtcNow() - at)}." : $"You have {_host.Version}.";
     }
 
-    private bool CanCheckApp() => !IsCheckingApp && _host.Updates.CanCheck;
+    private void OnUpdatesChanged(object? sender, EventArgs e)
+    {
+        if (!IsCheckingApp)
+        {
+            AppUpdateStatus = AppUpdateSummary();
+        }
+
+        Raise(nameof(AppUpdateUrl), nameof(CanInstallAppUpdate), nameof(InstallUpdateText));
+        CheckAppUpdateCommand.NotifyCanExecuteChanged();
+    }
+
+    [RelayCommand]
+    private async Task InstallAppUpdate()
+    {
+        IsCheckingApp = true;
+        try
+        {
+            AppUpdateStatus = await _host.Updates.InstallAsync();
+        }
+        finally
+        {
+            IsCheckingApp = false;
+            Raise(nameof(AppUpdateUrl), nameof(CanInstallAppUpdate), nameof(InstallUpdateText));
+        }
+    }
+
+    private bool CanCheckApp() => !IsCheckingApp && _host.Updates is { CanCheck: true, State: UpdateState.Idle };
 
     [RelayCommand(CanExecute = nameof(CanCheckApp))]
     private async Task CheckAppUpdate()
@@ -844,7 +902,7 @@ internal sealed partial class SettingsViewModel : ObservableObject, IDisposable
         finally
         {
             IsCheckingApp = false;
-            OnPropertyChanged(nameof(AppUpdateUrl));
+            Raise(nameof(AppUpdateUrl), nameof(CanInstallAppUpdate), nameof(InstallUpdateText));
         }
     }
 
@@ -874,11 +932,7 @@ internal sealed partial class SettingsViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private void OpenLogs() => _actions.OpenFolder(_host.Paths.Logs);
 
-    // ----- about -----
-
     public string VersionText => $"Version {_host.Version}";
-
-    public string? RepositoryUrl => _host.GitHubRepository is { Length: > 0 } r ? $"https://github.com/{r}" : null;
 
     [RelayCommand]
     private void OpenLink(string? url)
@@ -895,6 +949,7 @@ internal sealed partial class SettingsViewModel : ObservableObject, IDisposable
         _host.Store.Changed -= OnStoreChanged;
         _host.Keys.Changed -= OnKeyChanged;
         _host.Content.StatusChanged -= OnContentStatus;
+        _host.Updates.Changed -= OnUpdatesChanged;
         if (_detector is not null)
         {
             _detector.Changed -= OnDetectorChanged;

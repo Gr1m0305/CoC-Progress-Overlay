@@ -27,6 +27,9 @@ public sealed class AppPaths
 
     public string Logs => Path.Combine(Root, "logs");
 
+    /// <summary>Downloaded installers of new versions, kept until the next one.</summary>
+    public string Updates => Path.Combine(Root, "updates");
+
     public string SettingsFile => Path.Combine(Root, "settings.json");
 
     public string ApiKeyFile => Path.Combine(Root, "apikey.bin");
