@@ -1,0 +1,367 @@
+{
+ "items": [
+  {
+   "tag": "#9P2CLQ822",
+   "name": "Ash 12",
+   "role": "leader",
+   "townHallLevel": 19,
+   "expLevel": 282,
+   "leagueTier": {
+    "id": 105000033,
+    "name": "League 33",
+    "iconUrls": {}
+   },
+   "trophies": 5065,
+   "builderBaseTrophies": 4392,
+   "clanRank": 1,
+   "previousClanRank": 1,
+   "donations": 441,
+   "donationsReceived": 654
+  },
+  {
+   "tag": "#GGYPU8V2P",
+   "name": "Birch 37",
+   "role": "coLeader",
+   "townHallLevel": 19,
+   "expLevel": 186,
+   "leagueTier": {
+    "id": 105000032,
+    "name": "League 32",
+    "iconUrls": {}
+   },
+   "trophies": 5024,
+   "builderBaseTrophies": 5439,
+   "clanRank": 2,
+   "previousClanRank": 2,
+   "donations": 1313,
+   "donationsReceived": 596
+  },
+  {
+   "tag": "#VCVVY2VRY",
+   "name": "Elm 95",
+   "role": "coLeader",
+   "townHallLevel": 19,
+   "expLevel": 279,
+   "leagueTier": {
+    "id": 105000030,
+    "name": "League 30",
+    "iconUrls": {}
+   },
+   "trophies": 4888,
+   "builderBaseTrophies": 4309,
+   "clanRank": 3,
+   "previousClanRank": 4,
+   "donations": 928,
+   "donationsReceived": 706
+  },
+  {
+   "tag": "#2PQ8LV9CY",
+   "name": "Demo Chief",
+   "role": "coLeader",
+   "townHallLevel": 19,
+   "expLevel": 222,
+   "leagueTier": {
+    "id": 105000031,
+    "name": "League 31",
+    "iconUrls": {}
+   },
+   "trophies": 4870,
+   "builderBaseTrophies": 4434,
+   "clanRank": 4,
+   "previousClanRank": 3,
+   "donations": 1386,
+   "donationsReceived": 1484
+  },
+  {
+   "tag": "#QP2VVGVP0",
+   "name": "Fir 47",
+   "role": "admin",
+   "townHallLevel": 19,
+   "expLevel": 326,
+   "leagueTier": {
+    "id": 105000029,
+    "name": "League 29",
+    "iconUrls": {}
+   },
+   "trophies": 4841,
+   "builderBaseTrophies": 5536,
+   "clanRank": 5,
+   "previousClanRank": 5,
+   "donations": 2282,
+   "donationsReceived": 599
+  },
+  {
+   "tag": "#LLRPLQ89P",
+   "name": "Hazel 43",
+   "role": "admin",
+   "townHallLevel": 19,
+   "expLevel": 191,
+   "leagueTier": {
+    "id": 105000028,
+    "name": "League 28",
+    "iconUrls": {}
+   },
+   "trophies": 4795,
+   "builderBaseTrophies": 3894,
+   "clanRank": 6,
+   "previousClanRank": 6,
+   "donations": 2095,
+   "donationsReceived": 1482
+  },
+  {
+   "tag": "#PGGJQCY8J",
+   "name": "Juniper 35",
+   "role": "admin",
+   "townHallLevel": 16,
+   "expLevel": 285,
+   "leagueTier": {
+    "id": 105000027,
+    "name": "League 27",
+    "iconUrls": {}
+   },
+   "trophies": 4728,
+   "builderBaseTrophies": 5100,
+   "clanRank": 7,
+   "previousClanRank": 7,
+   "donations": 2006,
+   "donationsReceived": 765
+  },
+  {
+   "tag": "#8YLCRYJG9",
+   "name": "Larch 51",
+   "role": "admin",
+   "townHallLevel": 16,
+   "expLevel": 195,
+   "leagueTier": {
+    "id": 105000027,
+    "name": "League 27",
+    "iconUrls": {}
+   },
+   "trophies": 4666,
+   "builderBaseTrophies": 4368,
+   "clanRank": 8,
+   "previousClanRank": 8,
+   "donations": 1172,
+   "donationsReceived": 450
+  },
+  {
+   "tag": "#Y8PQ00YC2",
+   "name": "Maple 46",
+   "role": "admin",
+   "townHallLevel": 18,
+   "expLevel": 263,
+   "leagueTier": {
+    "id": 105000027,
+    "name": "League 27",
+    "iconUrls": {}
+   },
+   "trophies": 4619,
+   "builderBaseTrophies": 4461,
+   "clanRank": 9,
+   "previousClanRank": 9,
+   "donations": 1383,
+   "donationsReceived": 858
+  },
+  {
+   "tag": "#8UJLVVRJV",
+   "name": "Oak 19",
+   "role": "member",
+   "townHallLevel": 17,
+   "expLevel": 229,
+   "leagueTier": {
+    "id": 105000027,
+    "name": "League 27",
+    "iconUrls": {}
+   },
+   "trophies": 4532,
+   "builderBaseTrophies": 4398,
+   "clanRank": 10,
+   "previousClanRank": 10,
+   "donations": 758,
+   "donationsReceived": 712
+  },
+  {
+   "tag": "#LR8YR0Y0Q",
+   "name": "Pine 31",
+   "role": "member",
+   "townHallLevel": 17,
+   "expLevel": 272,
+   "leagueTier": {
+    "id": 105000027,
+    "name": "League 27",
+    "iconUrls": {}
+   },
+   "trophies": 4482,
+   "builderBaseTrophies": 4970,
+   "clanRank": 11,
+   "previousClanRank": 11,
+   "donations": 597,
+   "donationsReceived": 1099
+  },
+  {
+   "tag": "#9L92000C8",
+   "name": "Rowan 86",
+   "role": "member",
+   "townHallLevel": 18,
+   "expLevel": 218,
+   "leagueTier": {
+    "id": 105000027,
+    "name": "League 27",
+    "iconUrls": {}
+   },
+   "trophies": 4402,
+   "builderBaseTrophies": 3883,
+   "clanRank": 12,
+   "previousClanRank": 12,
+   "donations": 2209,
+   "donationsReceived": 1393
+  },
+  {
+   "tag": "#9Y02VGPUL",
+   "name": "Spruce 93",
+   "role": "member",
+   "townHallLevel": 16,
+   "expLevel": 302,
+   "leagueTier": {
+    "id": 105000027,
+    "name": "League 27",
+    "iconUrls": {}
+   },
+   "trophies": 4368,
+   "builderBaseTrophies": 4295,
+   "clanRank": 13,
+   "previousClanRank": 13,
+   "donations": 1997,
+   "donationsReceived": 1040
+  },
+  {
+   "tag": "#Q09LQ9JLV",
+   "name": "Willow 37",
+   "role": "member",
+   "townHallLevel": 17,
+   "expLevel": 228,
+   "leagueTier": {
+    "id": 105000027,
+    "name": "League 27",
+    "iconUrls": {}
+   },
+   "trophies": 4318,
+   "builderBaseTrophies": 3875,
+   "clanRank": 14,
+   "previousClanRank": 14,
+   "donations": 1241,
+   "donationsReceived": 718
+  },
+  {
+   "tag": "#9G9U9LVP8",
+   "name": "Yew 51",
+   "role": "member",
+   "townHallLevel": 16,
+   "expLevel": 260,
+   "leagueTier": {
+    "id": 105000027,
+    "name": "League 27",
+    "iconUrls": {}
+   },
+   "trophies": 4224,
+   "builderBaseTrophies": 4039,
+   "clanRank": 15,
+   "previousClanRank": 15,
+   "donations": 1850,
+   "donationsReceived": 1537
+  },
+  {
+   "tag": "#JVUCC0QL2",
+   "name": "Alder 65",
+   "role": "member",
+   "townHallLevel": 16,
+   "expLevel": 326,
+   "leagueTier": {
+    "id": 105000027,
+    "name": "League 27",
+    "iconUrls": {}
+   },
+   "trophies": 4190,
+   "builderBaseTrophies": 4489,
+   "clanRank": 16,
+   "previousClanRank": 16,
+   "donations": 1413,
+   "donationsReceived": 1545
+  },
+  {
+   "tag": "#QUJYVLG9J",
+   "name": "Aspen 97",
+   "role": "member",
+   "townHallLevel": 17,
+   "expLevel": 266,
+   "leagueTier": {
+    "id": 105000027,
+    "name": "League 27",
+    "iconUrls": {}
+   },
+   "trophies": 4115,
+   "builderBaseTrophies": 4816,
+   "clanRank": 17,
+   "previousClanRank": 17,
+   "donations": 504,
+   "donationsReceived": 773
+  },
+  {
+   "tag": "#JJ90LR8UP",
+   "name": "Beech 95",
+   "role": "member",
+   "townHallLevel": 16,
+   "expLevel": 222,
+   "leagueTier": {
+    "id": 105000027,
+    "name": "League 27",
+    "iconUrls": {}
+   },
+   "trophies": 4040,
+   "builderBaseTrophies": 4751,
+   "clanRank": 18,
+   "previousClanRank": 18,
+   "donations": 2134,
+   "donationsReceived": 1728
+  },
+  {
+   "tag": "#LL9U0980R",
+   "name": "Cypress 42",
+   "role": "member",
+   "townHallLevel": 16,
+   "expLevel": 281,
+   "leagueTier": {
+    "id": 105000027,
+    "name": "League 27",
+    "iconUrls": {}
+   },
+   "trophies": 3996,
+   "builderBaseTrophies": 5597,
+   "clanRank": 19,
+   "previousClanRank": 19,
+   "donations": 1110,
+   "donationsReceived": 1327
+  },
+  {
+   "tag": "#298JRYVGU",
+   "name": "Holly 70",
+   "role": "member",
+   "townHallLevel": 18,
+   "expLevel": 292,
+   "leagueTier": {
+    "id": 105000027,
+    "name": "League 27",
+    "iconUrls": {}
+   },
+   "trophies": 3959,
+   "builderBaseTrophies": 3961,
+   "clanRank": 20,
+   "previousClanRank": 20,
+   "donations": 340,
+   "donationsReceived": 1624
+  }
+ ],
+ "paging": {
+  "cursors": {}
+ }
+}

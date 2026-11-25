@@ -1,0 +1,39 @@
+{
+ "tag": "#2YQJ0PLCR",
+ "name": "Demo Clan",
+ "type": "inviteOnly",
+ "description": "Anonymised demo clan.",
+ "location": {
+  "id": 32000006,
+  "name": "International",
+  "isCountry": false
+ },
+ "isFamilyFriendly": true,
+ "badgeUrls": {},
+ "clanLevel": 23,
+ "clanPoints": 52310,
+ "clanBuilderBasePoints": 41200,
+ "clanCapitalPoints": 4120,
+ "capitalLeague": {
+  "id": 85000018,
+  "name": "Master League I"
+ },
+ "requiredTrophies": 2000,
+ "warFrequency": "always",
+ "warWinStreak": 4,
+ "warWins": 512,
+ "warTies": 9,
+ "warLosses": 133,
+ "isWarLogPublic": true,
+ "warLeague": {
+  "id": 48000017,
+  "name": "Champion League II"
+ },
+ "members": 20,
+ "labels": [],
+ "requiredBuilderBaseTrophies": 0,
+ "requiredTownhallLevel": 15,
+ "clanCapital": {
+  "capitalHallLevel": 10
+ }
+}

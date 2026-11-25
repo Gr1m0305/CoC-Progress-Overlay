@@ -41,8 +41,28 @@ Times in the API are `yyyyMMddTHHmmss.fffZ` (UTC).
 
 Refresh policy (implemented in `App/Services/RefreshCoordinator`): the player is refreshed on
 overlay open when the cached copy is older than 5 minutes; clan, war, CWL and raids every 2
-minutes while the overlay is visible; nothing while it is hidden. Every response is cached on
-disk per account with its fetch time (`%LOCALAPPDATA%\ClashOverlay\cache\<tag>\*.json`).
+minutes while the overlay is visible; nothing while it is hidden.
+
+Caching (`ClashApiClient` + `ResponseCache`): every good answer is kept on disk with its fetch
+time and a max age, and is served without a request while it is fresh. Layout under
+`%LOCALAPPDATA%\ClashOverlay\cache\`: `<player tag>\player.json`;
+`clan-<clan tag>\{clan,members,currentwar,warlog,leaguegroup,raids}.json`;
+`cwl\<war tag>.json`; `global\goldpass.json` (tags without `#`). Max ages: player, clan,
+members, league group and raids 5 minutes; current war and CWL wars 2 minutes; war log 30
+minutes; an ended CWL war 30 days; Gold Pass 6 hours. A longer `Cache-Control: max-age` from
+the API wins. When a call fails, the last good copy comes back marked stale with the error.
+
+Backoff (`BackoffGate`, shared by all endpoints because the API throttles per key): 429 waits
+`Retry-After`, else 5 s doubling to 5 minutes; 503 maintenance 1 minute doubling to 10 minutes;
+network errors, timeouts and other 5xx 10 s doubling to 5 minutes; a refused key or a wrong IP
+pauses 5 minutes, or until the key is changed. `notFound` and a private war log never pause.
+
+Key payload: API keys are JWTs whose payload lists the allowed addresses
+(`limits[].cidrs`), so the app can show which IP a key was made for without a request
+(`ApiKeyInfo`). The optional developer-site helper (`DeveloperSiteKeyManager`, off by default)
+posts to `developer.clashofclans.com/api/login`, `apikey/list`, `apikey/create` and
+`apikey/revoke` like coc.py; the login answer's `temporaryAPIToken` carries the public IP the
+site sees. It only ever revokes keys named "Clash Tracker", and only at the 10-key limit.
 
 ## 2. Village data export
 

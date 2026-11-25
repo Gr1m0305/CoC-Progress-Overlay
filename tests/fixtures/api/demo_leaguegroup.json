@@ -1,0 +1,728 @@
+{
+ "state": "ended",
+ "season": "2026-11",
+ "clans": [
+  {
+   "tag": "#2YQJ0PLCR",
+   "name": "Demo Clan",
+   "clanLevel": 23,
+   "badgeUrls": {},
+   "members": [
+    {
+     "tag": "#R2QGVPRU8",
+     "name": "Demo 1",
+     "townHallLevel": 19
+    },
+    {
+     "tag": "#2PQ8LV9CY",
+     "name": "Demo Chief",
+     "townHallLevel": 19
+    },
+    {
+     "tag": "#2Y2UG0PVY",
+     "name": "Demo 3",
+     "townHallLevel": 19
+    },
+    {
+     "tag": "#V22GQL9UP",
+     "name": "Demo 4",
+     "townHallLevel": 18
+    },
+    {
+     "tag": "#L9UQVL222",
+     "name": "Demo 5",
+     "townHallLevel": 18
+    },
+    {
+     "tag": "#RUYGLLVCU",
+     "name": "Demo 6",
+     "townHallLevel": 18
+    },
+    {
+     "tag": "#Q2J9JPVQL",
+     "name": "Demo 7",
+     "townHallLevel": 17
+    },
+    {
+     "tag": "#2UG8YV88C",
+     "name": "Demo 8",
+     "townHallLevel": 17
+    },
+    {
+     "tag": "#8YQVYPG0C",
+     "name": "Demo 9",
+     "townHallLevel": 17
+    },
+    {
+     "tag": "#80JP2G2QU",
+     "name": "Demo 10",
+     "townHallLevel": 16
+    },
+    {
+     "tag": "#CRQG2G9LV",
+     "name": "Demo 11",
+     "townHallLevel": 16
+    },
+    {
+     "tag": "#PY9U8VJ0J",
+     "name": "Demo 12",
+     "townHallLevel": 16
+    },
+    {
+     "tag": "#2RYGQURPV",
+     "name": "Demo 13",
+     "townHallLevel": 15
+    },
+    {
+     "tag": "#GUQRRQL8P",
+     "name": "Demo 14",
+     "townHallLevel": 15
+    },
+    {
+     "tag": "#URYJY8L2R",
+     "name": "Demo 15",
+     "townHallLevel": 15
+    }
+   ]
+  },
+  {
+   "tag": "#288Y9P9YR",
+   "name": "Iron Ravens",
+   "clanLevel": 18,
+   "badgeUrls": {},
+   "members": [
+    {
+     "tag": "#VR9RYR0CJ",
+     "name": "Iron 1",
+     "townHallLevel": 19
+    },
+    {
+     "tag": "#2LL9UR8R0",
+     "name": "Iron 2",
+     "townHallLevel": 19
+    },
+    {
+     "tag": "#88RP9LCYG",
+     "name": "Iron 3",
+     "townHallLevel": 19
+    },
+    {
+     "tag": "#JY8CYJVGJ",
+     "name": "Iron 4",
+     "townHallLevel": 18
+    },
+    {
+     "tag": "#RYPRYG0G8",
+     "name": "Iron 5",
+     "townHallLevel": 18
+    },
+    {
+     "tag": "#YRVV9QQV2",
+     "name": "Iron 6",
+     "townHallLevel": 18
+    },
+    {
+     "tag": "#2JR988GC8",
+     "name": "Iron 7",
+     "townHallLevel": 17
+    },
+    {
+     "tag": "#RV0GVYV2C",
+     "name": "Iron 8",
+     "townHallLevel": 17
+    },
+    {
+     "tag": "#2UVR8G8PR",
+     "name": "Iron 9",
+     "townHallLevel": 17
+    },
+    {
+     "tag": "#2PQVP9JQU",
+     "name": "Iron 10",
+     "townHallLevel": 16
+    },
+    {
+     "tag": "#PGCU08PL0",
+     "name": "Iron 11",
+     "townHallLevel": 16
+    },
+    {
+     "tag": "#2YGRVVY29",
+     "name": "Iron 12",
+     "townHallLevel": 16
+    },
+    {
+     "tag": "#LJ2ULU0P9",
+     "name": "Iron 13",
+     "townHallLevel": 15
+    },
+    {
+     "tag": "#VJ9V89CC2",
+     "name": "Iron 14",
+     "townHallLevel": 15
+    },
+    {
+     "tag": "#200PGGGL2",
+     "name": "Iron 15",
+     "townHallLevel": 15
+    }
+   ]
+  },
+  {
+   "tag": "#RJYLYGC29",
+   "name": "Blue Harbour",
+   "clanLevel": 18,
+   "badgeUrls": {},
+   "members": [
+    {
+     "tag": "#2GJYJ8J9G",
+     "name": "Blue 1",
+     "townHallLevel": 19
+    },
+    {
+     "tag": "#CG0C028L8",
+     "name": "Blue 2",
+     "townHallLevel": 19
+    },
+    {
+     "tag": "#2UGYGYJP8",
+     "name": "Blue 3",
+     "townHallLevel": 19
+    },
+    {
+     "tag": "#RR2RJR2R0",
+     "name": "Blue 4",
+     "townHallLevel": 18
+    },
+    {
+     "tag": "#80UPGJLUP",
+     "name": "Blue 5",
+     "townHallLevel": 18
+    },
+    {
+     "tag": "#RYU8GYGQ9",
+     "name": "Blue 6",
+     "townHallLevel": 18
+    },
+    {
+     "tag": "#RQ8QJRG0R",
+     "name": "Blue 7",
+     "townHallLevel": 17
+    },
+    {
+     "tag": "#GR9PRJRCR",
+     "name": "Blue 8",
+     "townHallLevel": 17
+    },
+    {
+     "tag": "#CQY8P8YPV",
+     "name": "Blue 9",
+     "townHallLevel": 17
+    },
+    {
+     "tag": "#YC9GQRPPY",
+     "name": "Blue 10",
+     "townHallLevel": 16
+    },
+    {
+     "tag": "#VJ8Y2V9UY",
+     "name": "Blue 11",
+     "townHallLevel": 16
+    },
+    {
+     "tag": "#JV98Q2P0G",
+     "name": "Blue 12",
+     "townHallLevel": 16
+    },
+    {
+     "tag": "#20V0JJG89",
+     "name": "Blue 13",
+     "townHallLevel": 15
+    },
+    {
+     "tag": "#9YJLL9JQC",
+     "name": "Blue 14",
+     "townHallLevel": 15
+    },
+    {
+     "tag": "#LPG2YU028",
+     "name": "Blue 15",
+     "townHallLevel": 15
+    }
+   ]
+  },
+  {
+   "tag": "#Y8G90029P",
+   "name": "Stormwatch",
+   "clanLevel": 20,
+   "badgeUrls": {},
+   "members": [
+    {
+     "tag": "#2L0L8LJC0",
+     "name": "Stormwatch 1",
+     "townHallLevel": 19
+    },
+    {
+     "tag": "#G9YYGYJ80",
+     "name": "Stormwatch 2",
+     "townHallLevel": 19
+    },
+    {
+     "tag": "#YY2ULR9QY",
+     "name": "Stormwatch 3",
+     "townHallLevel": 19
+    },
+    {
+     "tag": "#RLGC2L82Q",
+     "name": "Stormwatch 4",
+     "townHallLevel": 18
+    },
+    {
+     "tag": "#LG9U02P28",
+     "name": "Stormwatch 5",
+     "townHallLevel": 18
+    },
+    {
+     "tag": "#8QQCYULYL",
+     "name": "Stormwatch 6",
+     "townHallLevel": 18
+    },
+    {
+     "tag": "#JPULC2UYL",
+     "name": "Stormwatch 7",
+     "townHallLevel": 17
+    },
+    {
+     "tag": "#GV2CQLCY9",
+     "name": "Stormwatch 8",
+     "townHallLevel": 17
+    },
+    {
+     "tag": "#RVR8LP2YG",
+     "name": "Stormwatch 9",
+     "townHallLevel": 17
+    },
+    {
+     "tag": "#2GUJVJJ9R",
+     "name": "Stormwatch 10",
+     "townHallLevel": 16
+    },
+    {
+     "tag": "#8UQ9GYLQL",
+     "name": "Stormwatch 11",
+     "townHallLevel": 16
+    },
+    {
+     "tag": "#GVJ2QV0VC",
+     "name": "Stormwatch 12",
+     "townHallLevel": 16
+    },
+    {
+     "tag": "#LUYQCCP98",
+     "name": "Stormwatch 13",
+     "townHallLevel": 15
+    },
+    {
+     "tag": "#YY8PGCRJQ",
+     "name": "Stormwatch 14",
+     "townHallLevel": 15
+    },
+    {
+     "tag": "#URU8QLCQY",
+     "name": "Stormwatch 15",
+     "townHallLevel": 15
+    }
+   ]
+  },
+  {
+   "tag": "#GQ0PUCUL8",
+   "name": "Copper Hill",
+   "clanLevel": 17,
+   "badgeUrls": {},
+   "members": [
+    {
+     "tag": "#RGVUU0CUJ",
+     "name": "Copper 1",
+     "townHallLevel": 19
+    },
+    {
+     "tag": "#LPRRC8JG8",
+     "name": "Copper 2",
+     "townHallLevel": 19
+    },
+    {
+     "tag": "#V0QJVRP80",
+     "name": "Copper 3",
+     "townHallLevel": 19
+    },
+    {
+     "tag": "#2V9UY8YVY",
+     "name": "Copper 4",
+     "townHallLevel": 18
+    },
+    {
+     "tag": "#VQR9PU0J2",
+     "name": "Copper 5",
+     "townHallLevel": 18
+    },
+    {
+     "tag": "#2Q2CCJ99Q",
+     "name": "Copper 6",
+     "townHallLevel": 18
+    },
+    {
+     "tag": "#UG2GR8890",
+     "name": "Copper 7",
+     "townHallLevel": 17
+    },
+    {
+     "tag": "#V9GU990GQ",
+     "name": "Copper 8",
+     "townHallLevel": 17
+    },
+    {
+     "tag": "#YYPRLR8CU",
+     "name": "Copper 9",
+     "townHallLevel": 17
+    },
+    {
+     "tag": "#YJJC2RPP2",
+     "name": "Copper 10",
+     "townHallLevel": 16
+    },
+    {
+     "tag": "#2VYC0UL29",
+     "name": "Copper 11",
+     "townHallLevel": 16
+    },
+    {
+     "tag": "#C90QCLY2V",
+     "name": "Copper 12",
+     "townHallLevel": 16
+    },
+    {
+     "tag": "#UJCV2V8CV",
+     "name": "Copper 13",
+     "townHallLevel": 15
+    },
+    {
+     "tag": "#QCCLGVLC2",
+     "name": "Copper 14",
+     "townHallLevel": 15
+    },
+    {
+     "tag": "#8808JQGVG",
+     "name": "Copper 15",
+     "townHallLevel": 15
+    }
+   ]
+  },
+  {
+   "tag": "#LRQYY0QC8",
+   "name": "Quiet Pines",
+   "clanLevel": 22,
+   "badgeUrls": {},
+   "members": [
+    {
+     "tag": "#QVQYRL9VJ",
+     "name": "Quiet 1",
+     "townHallLevel": 19
+    },
+    {
+     "tag": "#PPR0PLCRY",
+     "name": "Quiet 2",
+     "townHallLevel": 19
+    },
+    {
+     "tag": "#CPUCU28GU",
+     "name": "Quiet 3",
+     "townHallLevel": 19
+    },
+    {
+     "tag": "#98CULJG8J",
+     "name": "Quiet 4",
+     "townHallLevel": 18
+    },
+    {
+     "tag": "#8RU9G2GC2",
+     "name": "Quiet 5",
+     "townHallLevel": 18
+    },
+    {
+     "tag": "#UP02GQJ2J",
+     "name": "Quiet 6",
+     "townHallLevel": 18
+    },
+    {
+     "tag": "#G0PPV9UU9",
+     "name": "Quiet 7",
+     "townHallLevel": 17
+    },
+    {
+     "tag": "#2UPRLPGP0",
+     "name": "Quiet 8",
+     "townHallLevel": 17
+    },
+    {
+     "tag": "#2LYRU8CQR",
+     "name": "Quiet 9",
+     "townHallLevel": 17
+    },
+    {
+     "tag": "#CYCC9VQ98",
+     "name": "Quiet 10",
+     "townHallLevel": 16
+    },
+    {
+     "tag": "#U8YC099CG",
+     "name": "Quiet 11",
+     "townHallLevel": 16
+    },
+    {
+     "tag": "#QGY8R8VYR",
+     "name": "Quiet 12",
+     "townHallLevel": 16
+    },
+    {
+     "tag": "#GLVCQYYCU",
+     "name": "Quiet 13",
+     "townHallLevel": 15
+    },
+    {
+     "tag": "#U2UQQPP82",
+     "name": "Quiet 14",
+     "townHallLevel": 15
+    },
+    {
+     "tag": "#CJPCQRGJQ",
+     "name": "Quiet 15",
+     "townHallLevel": 15
+    }
+   ]
+  },
+  {
+   "tag": "#2CUCCL92Y",
+   "name": "Night Owls",
+   "clanLevel": 19,
+   "badgeUrls": {},
+   "members": [
+    {
+     "tag": "#CQ2PYCG2R",
+     "name": "Night 1",
+     "townHallLevel": 19
+    },
+    {
+     "tag": "#PR08LG8JL",
+     "name": "Night 2",
+     "townHallLevel": 19
+    },
+    {
+     "tag": "#Q80Y9J9LG",
+     "name": "Night 3",
+     "townHallLevel": 19
+    },
+    {
+     "tag": "#89QCJQPLP",
+     "name": "Night 4",
+     "townHallLevel": 18
+    },
+    {
+     "tag": "#YL9CJ0CJR",
+     "name": "Night 5",
+     "townHallLevel": 18
+    },
+    {
+     "tag": "#2UG9CVV0G",
+     "name": "Night 6",
+     "townHallLevel": 18
+    },
+    {
+     "tag": "#QYPUUU08Y",
+     "name": "Night 7",
+     "townHallLevel": 17
+    },
+    {
+     "tag": "#2CCLLUY9Y",
+     "name": "Night 8",
+     "townHallLevel": 17
+    },
+    {
+     "tag": "#QYLR0LC88",
+     "name": "Night 9",
+     "townHallLevel": 17
+    },
+    {
+     "tag": "#QLPU8CCQG",
+     "name": "Night 10",
+     "townHallLevel": 16
+    },
+    {
+     "tag": "#YYUR2UU88",
+     "name": "Night 11",
+     "townHallLevel": 16
+    },
+    {
+     "tag": "#PRGJU82QJ",
+     "name": "Night 12",
+     "townHallLevel": 16
+    },
+    {
+     "tag": "#CVG0JCPRC",
+     "name": "Night 13",
+     "townHallLevel": 15
+    },
+    {
+     "tag": "#9U0LLPQ8V",
+     "name": "Night 14",
+     "townHallLevel": 15
+    },
+    {
+     "tag": "#228LUVUPG",
+     "name": "Night 15",
+     "townHallLevel": 15
+    }
+   ]
+  },
+  {
+   "tag": "#RG02Q8JG0",
+   "name": "Red Valley",
+   "clanLevel": 17,
+   "badgeUrls": {},
+   "members": [
+    {
+     "tag": "#QVU2JYPGC",
+     "name": "Red 1",
+     "townHallLevel": 19
+    },
+    {
+     "tag": "#CQ80VYPPP",
+     "name": "Red 2",
+     "townHallLevel": 19
+    },
+    {
+     "tag": "#LY0RR8LVP",
+     "name": "Red 3",
+     "townHallLevel": 19
+    },
+    {
+     "tag": "#R29R22QVR",
+     "name": "Red 4",
+     "townHallLevel": 18
+    },
+    {
+     "tag": "#PLC2LLUQG",
+     "name": "Red 5",
+     "townHallLevel": 18
+    },
+    {
+     "tag": "#JQR8JVQG8",
+     "name": "Red 6",
+     "townHallLevel": 18
+    },
+    {
+     "tag": "#PVYPJJ2QJ",
+     "name": "Red 7",
+     "townHallLevel": 17
+    },
+    {
+     "tag": "#GRJCVGC9P",
+     "name": "Red 8",
+     "townHallLevel": 17
+    },
+    {
+     "tag": "#JCCGULPGQ",
+     "name": "Red 9",
+     "townHallLevel": 17
+    },
+    {
+     "tag": "#UGY0YURQY",
+     "name": "Red 10",
+     "townHallLevel": 16
+    },
+    {
+     "tag": "#GVVY899RY",
+     "name": "Red 11",
+     "townHallLevel": 16
+    },
+    {
+     "tag": "#R2PLVQPJL",
+     "name": "Red 12",
+     "townHallLevel": 16
+    },
+    {
+     "tag": "#G8RCL9VLP",
+     "name": "Red 13",
+     "townHallLevel": 15
+    },
+    {
+     "tag": "#UYC8VPQ99",
+     "name": "Red 14",
+     "townHallLevel": 15
+    },
+    {
+     "tag": "#Q2JQR82PR",
+     "name": "Red 15",
+     "townHallLevel": 15
+    }
+   ]
+  }
+ ],
+ "rounds": [
+  {
+   "warTags": [
+    "#28YLYYC82",
+    "#RYQC0P8L9",
+    "#UCP98YC2V",
+    "#PU20YQVJ0"
+   ]
+  },
+  {
+   "warTags": [
+    "#J09V9G8VV",
+    "#YR2PV08VU",
+    "#29UU20CV0",
+    "#2RLYGCCR0"
+   ]
+  },
+  {
+   "warTags": [
+    "#CU22JGU2Y",
+    "#VUJ92Q28J",
+    "#GLVG0VYQ2",
+    "#9P909LV8U"
+   ]
+  },
+  {
+   "warTags": [
+    "#C2PGG98CC",
+    "#Y92UU0PLG",
+    "#28J9L82GY",
+    "#R0CGYPUJ8"
+   ]
+  },
+  {
+   "warTags": [
+    "#YYJGLP00Q",
+    "#2P2LUYJLG",
+    "#Q8QJG2LCP",
+    "#JLR00GVRY"
+   ]
+  },
+  {
+   "warTags": [
+    "#VLJ80JGYV",
+    "#GUQUR2JY2",
+    "#CUU0CJGCP",
+    "#C0Y2LQPGP"
+   ]
+  },
+  {
+   "warTags": [
+    "#URLYUYURC",
+    "#9G0LYRGYR",
+    "#8G2YCVLC8",
+    "#U0LJ2QQQJ"
+   ]
+  }
+ ]
+}

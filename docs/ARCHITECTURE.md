@@ -31,11 +31,11 @@ API and the village JSON the player exports from the game.
 * **`src/ClashOverlay.Core`**: everything that is game logic and has no UI.
   * `Data/`: `GameData` (items keyed by export id), `ItemDef`/`LevelDef` (normalised so every
     level's cost/time is "to reach this level"), `IGameDataSource` and `ClashKingDataSource`
-    (reads the downloaded JSON), `StaticDataUpdater` (download + manifest), `HallCounts`
-    (per-Town-Hall unlock counts and merge consumption).
+    (reads the downloaded JSON), `StaticDataUpdater` (download + manifest); `GameData` also
+    holds the per-hall unlock counts and which merges consume which buildings.
   * `Export/`: `ExportParser` → `VillageExport` (unknown ids become warnings).
-  * `Village/`: `VillageState` (what the player has, after merging the export with the API and
-    advancing timers by the time since export), `VillageMerger`.
+  * `State/`: `VillageState` (what the player has, after merging the export with the API and
+    advancing timers by the time since export), built by `VillageStateBuilder` (the merge rule).
   * `Calc/`: `ProgressCalculator` (per category and overall, levels or time weighted, costs and
     times to max), `RushCalculator` (below the previous Town Hall's max), `UpgradePlanner`
     (longest available builder, lab and pet upgrades, active upgrades), all for both villages.
@@ -72,7 +72,7 @@ Everything the app writes lives in `%LOCALAPPDATA%\ClashOverlay\`:
 | `data\` | ClashKing static data + `manifest.json` |
 | `assets\` | PNG artwork + `manifest.json` |
 | `accounts\<tag>\export.json` | the account's latest village export |
-| `cache\<tag>\*.json` | cached API responses with fetch time |
+| `cache\<tag>\`, `cache\clan-<tag>\`, `cache\cwl\`, `cache\global\` | cached API responses with fetch time and max age |
 | `cache\icons\` | league, label and clan badge icons from the API |
 | `logs\` | rolling log files (the API key is never logged) |
 

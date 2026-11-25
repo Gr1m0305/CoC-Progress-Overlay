@@ -1,0 +1,180 @@
+{
+ "items": [
+  {
+   "state": "ended",
+   "startTime": "20261120T070000.000Z",
+   "endTime": "20261123T070000.000Z",
+   "capitalTotalLoot": 1186420,
+   "raidsCompleted": 6,
+   "totalAttacks": 141,
+   "enemyDistrictsDestroyed": 37,
+   "offensiveReward": 1540,
+   "defensiveReward": 466,
+   "members": [
+    {
+     "tag": "#9P2CLQ822",
+     "name": "Ash 12",
+     "attacks": 6,
+     "attackLimit": 5,
+     "bonusAttackLimit": 1,
+     "capitalResourcesLooted": 31682
+    },
+    {
+     "tag": "#GGYPU8V2P",
+     "name": "Birch 37",
+     "attacks": 6,
+     "attackLimit": 5,
+     "bonusAttackLimit": 1,
+     "capitalResourcesLooted": 19211
+    },
+    {
+     "tag": "#VCVVY2VRY",
+     "name": "Elm 95",
+     "attacks": 5,
+     "attackLimit": 5,
+     "bonusAttackLimit": 1,
+     "capitalResourcesLooted": 19342
+    },
+    {
+     "tag": "#2PQ8LV9CY",
+     "name": "Demo Chief",
+     "attacks": 6,
+     "attackLimit": 5,
+     "bonusAttackLimit": 1,
+     "capitalResourcesLooted": 31840
+    },
+    {
+     "tag": "#QP2VVGVP0",
+     "name": "Fir 47",
+     "attacks": 5,
+     "attackLimit": 5,
+     "bonusAttackLimit": 1,
+     "capitalResourcesLooted": 28576
+    },
+    {
+     "tag": "#LLRPLQ89P",
+     "name": "Hazel 43",
+     "attacks": 4,
+     "attackLimit": 5,
+     "bonusAttackLimit": 1,
+     "capitalResourcesLooted": 29027
+    },
+    {
+     "tag": "#PGGJQCY8J",
+     "name": "Juniper 35",
+     "attacks": 6,
+     "attackLimit": 5,
+     "bonusAttackLimit": 1,
+     "capitalResourcesLooted": 22081
+    },
+    {
+     "tag": "#8YLCRYJG9",
+     "name": "Larch 51",
+     "attacks": 6,
+     "attackLimit": 5,
+     "bonusAttackLimit": 1,
+     "capitalResourcesLooted": 18872
+    },
+    {
+     "tag": "#Y8PQ00YC2",
+     "name": "Maple 46",
+     "attacks": 6,
+     "attackLimit": 5,
+     "bonusAttackLimit": 1,
+     "capitalResourcesLooted": 17003
+    },
+    {
+     "tag": "#8UJLVVRJV",
+     "name": "Oak 19",
+     "attacks": 4,
+     "attackLimit": 5,
+     "bonusAttackLimit": 1,
+     "capitalResourcesLooted": 25101
+    },
+    {
+     "tag": "#LR8YR0Y0Q",
+     "name": "Pine 31",
+     "attacks": 6,
+     "attackLimit": 5,
+     "bonusAttackLimit": 1,
+     "capitalResourcesLooted": 31359
+    },
+    {
+     "tag": "#9L92000C8",
+     "name": "Rowan 86",
+     "attacks": 4,
+     "attackLimit": 5,
+     "bonusAttackLimit": 1,
+     "capitalResourcesLooted": 27613
+    },
+    {
+     "tag": "#9Y02VGPUL",
+     "name": "Spruce 93",
+     "attacks": 5,
+     "attackLimit": 5,
+     "bonusAttackLimit": 1,
+     "capitalResourcesLooted": 16517
+    },
+    {
+     "tag": "#Q09LQ9JLV",
+     "name": "Willow 37",
+     "attacks": 6,
+     "attackLimit": 5,
+     "bonusAttackLimit": 1,
+     "capitalResourcesLooted": 17379
+    },
+    {
+     "tag": "#9G9U9LVP8",
+     "name": "Yew 51",
+     "attacks": 6,
+     "attackLimit": 5,
+     "bonusAttackLimit": 1,
+     "capitalResourcesLooted": 31499
+    },
+    {
+     "tag": "#JVUCC0QL2",
+     "name": "Alder 65",
+     "attacks": 5,
+     "attackLimit": 5,
+     "bonusAttackLimit": 1,
+     "capitalResourcesLooted": 19139
+    },
+    {
+     "tag": "#QUJYVLG9J",
+     "name": "Aspen 97",
+     "attacks": 6,
+     "attackLimit": 5,
+     "bonusAttackLimit": 1,
+     "capitalResourcesLooted": 21229
+    },
+    {
+     "tag": "#JJ90LR8UP",
+     "name": "Beech 95",
+     "attacks": 6,
+     "attackLimit": 5,
+     "bonusAttackLimit": 1,
+     "capitalResourcesLooted": 29363
+    },
+    {
+     "tag": "#LL9U0980R",
+     "name": "Cypress 42",
+     "attacks": 6,
+     "attackLimit": 5,
+     "bonusAttackLimit": 1,
+     "capitalResourcesLooted": 27408
+    },
+    {
+     "tag": "#298JRYVGU",
+     "name": "Holly 70",
+     "attacks": 4,
+     "attackLimit": 5,
+     "bonusAttackLimit": 1,
+     "capitalResourcesLooted": 29005
+    }
+   ]
+  }
+ ],
+ "paging": {
+  "cursors": {}
+ }
+}

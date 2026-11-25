@@ -1,0 +1,132 @@
+{
+ "items": [
+  {
+   "result": "win",
+   "endTime": "20261122T180000.000Z",
+   "teamSize": 15,
+   "attacksPerMember": 2,
+   "battleModifier": "none",
+   "clan": {
+    "tag": "#2YQJ0PLCR",
+    "name": "Demo Clan",
+    "badgeUrls": {},
+    "clanLevel": 23,
+    "attacks": 27,
+    "stars": 40,
+    "destructionPercentage": 92.15,
+    "expEarned": 520
+   },
+   "opponent": {
+    "tag": "#22UYPVRRJ",
+    "name": "Iron Ravens",
+    "badgeUrls": {},
+    "clanLevel": 18,
+    "stars": 37,
+    "destructionPercentage": 90.88
+   }
+  },
+  {
+   "result": "win",
+   "endTime": "20261120T180000.000Z",
+   "teamSize": 15,
+   "attacksPerMember": 2,
+   "battleModifier": "none",
+   "clan": {
+    "tag": "#2YQJ0PLCR",
+    "name": "Demo Clan",
+    "badgeUrls": {},
+    "clanLevel": 23,
+    "attacks": 27,
+    "stars": 38,
+    "destructionPercentage": 93.29,
+    "expEarned": 520
+   },
+   "opponent": {
+    "tag": "#8CC0UUU8J",
+    "name": "Blue Harbour",
+    "badgeUrls": {},
+    "clanLevel": 19,
+    "stars": 35,
+    "destructionPercentage": 83.16
+   }
+  },
+  {
+   "result": "lose",
+   "endTime": "20261118T180000.000Z",
+   "teamSize": 15,
+   "attacksPerMember": 2,
+   "battleModifier": "none",
+   "clan": {
+    "tag": "#2YQJ0PLCR",
+    "name": "Demo Clan",
+    "badgeUrls": {},
+    "clanLevel": 23,
+    "attacks": 27,
+    "stars": 42,
+    "destructionPercentage": 93.05,
+    "expEarned": 520
+   },
+   "opponent": {
+    "tag": "#CURVY88U9",
+    "name": "Stormwatch",
+    "badgeUrls": {},
+    "clanLevel": 16,
+    "stars": 44,
+    "destructionPercentage": 91.47
+   }
+  },
+  {
+   "result": "win",
+   "endTime": "20261116T180000.000Z",
+   "teamSize": 15,
+   "attacksPerMember": 2,
+   "battleModifier": "none",
+   "clan": {
+    "tag": "#2YQJ0PLCR",
+    "name": "Demo Clan",
+    "badgeUrls": {},
+    "clanLevel": 23,
+    "attacks": 27,
+    "stars": 39,
+    "destructionPercentage": 93.47,
+    "expEarned": 520
+   },
+   "opponent": {
+    "tag": "#2JPCJJVQ2",
+    "name": "Copper Hill",
+    "badgeUrls": {},
+    "clanLevel": 19,
+    "stars": 36,
+    "destructionPercentage": 89.57
+   }
+  },
+  {
+   "result": "tie",
+   "endTime": "20261114T180000.000Z",
+   "teamSize": 15,
+   "attacksPerMember": 2,
+   "battleModifier": "none",
+   "clan": {
+    "tag": "#2YQJ0PLCR",
+    "name": "Demo Clan",
+    "badgeUrls": {},
+    "clanLevel": 23,
+    "attacks": 27,
+    "stars": 43,
+    "destructionPercentage": 91.83,
+    "expEarned": 520
+   },
+   "opponent": {
+    "tag": "#GQGYYLCLV",
+    "name": "Quiet Pines",
+    "badgeUrls": {},
+    "clanLevel": 16,
+    "stars": 43,
+    "destructionPercentage": 89.1
+   }
+  }
+ ],
+ "paging": {
+  "cursors": {}
+ }
+}
