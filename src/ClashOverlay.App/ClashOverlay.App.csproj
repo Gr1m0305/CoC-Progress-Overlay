@@ -13,6 +13,8 @@
     <!-- LibraryImport source generator in Native/. -->
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NoWarn>$(NoWarn);WFAC010</NoWarn>
+    <!-- AssetFetch is also a console tool; the app only uses its library code, so its self-contained setting doesn't matter. -->
+    <ValidateExecutableReferencesMatchSelfContained>false</ValidateExecutableReferencesMatchSelfContained>
   </PropertyGroup>
 
   <!-- Keep WinForms and System.Drawing types out of the implicit usings (name clashes with WPF). -->
@@ -53,5 +55,10 @@
     <Resource Include="Assets\app.ico" />
     <None Include="Assets\Fonts\Inter-OFL.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" ExcludeFromSingleFile="true" Link="licenses\Inter-OFL.txt" />
   </ItemGroup>
+
+  <!-- The referenced AssetFetch tool brings its own config files; the app does not need them beside the exe. -->
+  <Target Name="DropToolConfigFiles" AfterTargets="Publish">
+    <Delete Files="$(PublishDir)AssetFetch.deps.json;$(PublishDir)AssetFetch.runtimeconfig.json" />
+  </Target>
 
 </Project>

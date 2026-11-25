@@ -64,7 +64,8 @@ internal sealed partial class OverviewTab : TabViewModel
         LabTitle = home ? "Laboratory" : "Star Laboratory";
         if (home)
         {
-            PetTime = p.PetHouseTime > 0 ? Fmt.Duration(p.PetHouseTime) : "Done";
+            var petHouseAt = ctx.Game.Get(GameData.PetHouseId)?.MaxLevelFor(ctx.Hall) ?? 0;
+            PetTime = p.PetHouseTime > 0 ? Fmt.Duration(p.PetHouseTime) : petHouseAt == 0 ? "Not yet" : "Done";
             HeroText = p.LongestHero is { } hero ? $"{hero.Name}: {Fmt.Duration(p.LongestHeroTime)}" : "All heroes maxed";
         }
 
@@ -75,6 +76,7 @@ internal sealed partial class OverviewTab : TabViewModel
         }
 
         ActiveTitle = r.Upgrades.Active.Count == 0 ? "NOTHING UPGRADING" : $"IN PROGRESS · {r.Upgrades.Active.Count}";
+        ActiveEmpty = r.Upgrades.Active.Count == 0 ? "No builder, laboratory or Pet House was busy in the last export." : null;
     }
 
     public override string Key => "overview";
@@ -126,6 +128,8 @@ internal sealed partial class OverviewTab : TabViewModel
     public List<ActiveRow> Active { get; } = [];
 
     public string ActiveTitle { get; }
+
+    public string? ActiveEmpty { get; }
 
     [RelayCommand]
     private void SetMode(string mode) => _ctx.Owner.SetProgressMode(mode == "Time" ? ProgressMode.Time : ProgressMode.Levels);

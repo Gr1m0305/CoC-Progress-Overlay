@@ -48,8 +48,16 @@ internal sealed class DemoApiClient(TimeProvider time) : IClashApiClient
 
     public DateTimeOffset? PausedUntil => null;
 
+    /// <summary>
+    /// For the screenshot run: answer the player call the way the real client does when the API fails and an older
+    /// copy is cached (the copy plus the error).
+    /// </summary>
+    public ClashApiException? Fault { get; set; }
+
     private ApiResult<T> Ok<T>(T value, double minutesAgo = 2)
-        where T : class => new() { Value = value, FetchedAt = time.GetUtcNow().AddMinutes(-minutesAgo), FromCache = true };
+        where T : class => Fault is { } f
+            ? new() { Value = value, FetchedAt = time.GetUtcNow().AddMinutes(-minutesAgo - 95), FromCache = true, IsStale = true, Error = f }
+            : new() { Value = value, FetchedAt = time.GetUtcNow().AddMinutes(-minutesAgo), FromCache = true };
 
     private static ApiResult<T> Missing<T>()
         where T : class => new() { Error = new ClashApiException(ApiErrorKind.NotFound, "Not in the demo data.", 404) };

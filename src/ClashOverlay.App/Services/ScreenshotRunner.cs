@@ -1,12 +1,15 @@
+using System.Net;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
+using ClashOverlay.Api;
 using ClashOverlay.App.ViewModels;
 using ClashOverlay.App.Views;
 using ClashOverlay.App.Windows;
+using ClashOverlay.Core.Calc;
 using ClashOverlay.Core.Data;
 using Microsoft.Extensions.Logging;
 
@@ -49,6 +52,7 @@ internal static class ScreenshotRunner
         await Settle();
         shots.Add(Save(frame, dir, "account-switcher.png"));
         vm.IsAccountMenuOpen = false;
+        await Scenarios(host, vm, frame, dir, shots);
         vm.OnHidden();
 
         // Setup, one picture per step.
@@ -73,6 +77,70 @@ internal static class ScreenshotRunner
         }
 
         host.Log.LogInformation("Screenshots written: {Files}", string.Join(", ", shots.Select(Path.GetFileName)));
+    }
+
+    /// <summary>
+    /// End-to-end checks on the demo data: progress by time, the second account, importing a newer export, and the
+    /// API failing with a saved copy (maintenance, IP change). Each writes a picture and a log line.
+    /// </summary>
+    private static async Task Scenarios(AppHost host, OverlayViewModel vm, Border frame, string dir, List<string> shots)
+    {
+        var log = host.Log;
+        vm.Village = Village.Home;
+        vm.SelectedTab = vm.Tabs.FirstOrDefault();
+
+        host.Settings.ProgressMode = ProgressMode.Time;
+        host.SaveSettings();
+        await vm.LoadAsync(force: false);
+        await Settle();
+        log.LogInformation("E2E progress by time: tabs {Tabs}", string.Join(", ", vm.Tabs.Select(t => t.Key)));
+        shots.Add(Save(frame, dir, "e2e-overview-time.png"));
+        host.Settings.ProgressMode = ProgressMode.Levels;
+        host.SaveSettings();
+
+        vm.SelectAccount(1);
+        await vm.LoadAsync(force: false);
+        await Settle();
+        log.LogInformation("E2E second account: {Name}, sync \"{Sync}\", warning {Warning}", vm.AccountName, vm.SyncText, vm.SyncWarning);
+        shots.Add(Save(frame, dir, "e2e-second-account.png"));
+        vm.SelectAccount(0);
+        await vm.LoadAsync(force: false);
+        await Settle();
+
+        // A newer export of the main village: the store's Changed event should reload the overlay by itself.
+        var before = vm.SyncText;
+        var json = System.Text.Json.Nodes.JsonNode.Parse(DemoData.Read("demo_th19.json"))!;
+        json["timestamp"] = host.Time.GetUtcNow().AddMinutes(-1).ToUnixTimeSeconds();
+        host.Store.Import(json.ToJsonString(), DemoData.MainTag);
+        for (var i = 0; i < 5 && vm.SyncText == before; i++)
+        {
+            await Settle();
+        }
+
+        log.LogInformation("E2E import: sync before \"{Before}\", after \"{After}\"", before, vm.SyncText);
+        shots.Add(Save(frame, dir, "e2e-after-import.png"));
+
+        if (host.Api is DemoApiClient api)
+        {
+            api.Fault = ClashApiException.FromResponse(HttpStatusCode.ServiceUnavailable,
+                """{"reason":"inMaintenance","message":"API is currently in maintenance, please come back later"}""", null, warEndpoint: false);
+            await vm.LoadAsync(force: true);
+            await Settle();
+            log.LogInformation("E2E maintenance: notice \"{Notice}\"", vm.Notice);
+            shots.Add(Save(frame, dir, "e2e-maintenance.png"));
+
+            api.Fault = ClashApiException.FromResponse(HttpStatusCode.Forbidden,
+                """{"reason":"accessDenied.invalidIp","message":"Invalid authorization: API key does not allow access from IP 198.51.100.7"}""", null, warEndpoint: false);
+            await vm.LoadAsync(force: true);
+            await Settle();
+            log.LogInformation("E2E invalidIp: notice \"{Notice}\"", vm.Notice);
+            shots.Add(Save(frame, dir, "e2e-invalid-ip.png"));
+
+            api.Fault = null;
+            await vm.LoadAsync(force: true);
+            await Settle();
+            log.LogInformation("E2E recovered: notice \"{Notice}\"", vm.Notice ?? "(none)");
+        }
     }
 
     /// <summary>Lets bindings, layout and async loads finish.</summary>

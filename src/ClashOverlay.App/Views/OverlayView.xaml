@@ -91,6 +91,9 @@
                                             <DataTrigger Binding="{Binding SyncWarning}" Value="True">
                                                 <Setter Property="Fill" Value="{StaticResource OrangeBrush}" />
                                             </DataTrigger>
+                                            <DataTrigger Binding="{Binding ApiStale}" Value="True">
+                                                <Setter Property="Fill" Value="{StaticResource OrangeBrush}" />
+                                            </DataTrigger>
                                         </Style.Triggers>
                                     </Style>
                                 </Ellipse.Style>
@@ -117,6 +120,10 @@
 
                 <!-- Tabs -->
                 <Grid Grid.Row="1" Margin="0,8,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
                     <ListBox ItemsSource="{Binding Tabs}" SelectedItem="{Binding SelectedTab}" Background="Transparent" BorderThickness="0"
                              ItemContainerStyle="{StaticResource TabItem}" Focusable="False" DisplayMemberPath="Title"
                              ScrollViewer.HorizontalScrollBarVisibility="Disabled">
@@ -126,12 +133,13 @@
                             </ItemsPanelTemplate>
                         </ListBox.ItemsPanel>
                     </ListBox>
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
-                        <TextBlock Style="{StaticResource Subtle}" Foreground="{StaticResource OrangeBrush}" Text="{Binding Notice}" MaxWidth="560" Margin="0,0,10,0"
-                                   ToolTip="{Binding Notice}" Visibility="{Binding Notice, Converter={x:Static v:VisibleIf.Instance}}" />
-                        <TextBlock Style="{StaticResource Muted}" Text="Updating…" Visibility="{Binding IsLoading, Converter={x:Static v:VisibleIf.Instance}}" />
-                    </StackPanel>
-                    <Border Height="1" VerticalAlignment="Bottom" Background="{StaticResource DividerBrush}" />
+                    <DockPanel Grid.Column="1" Margin="16,0,0,0" VerticalAlignment="Center">
+                        <TextBlock DockPanel.Dock="Right" Style="{StaticResource Muted}" Text="Updating…" Visibility="{Binding IsLoading, Converter={x:Static v:VisibleIf.Instance}}" />
+                        <TextBlock Style="{StaticResource Subtle}" Foreground="{StaticResource OrangeBrush}" Text="{Binding Notice}" Margin="0,0,10,0"
+                                   TextAlignment="Right" TextTrimming="CharacterEllipsis" ToolTip="{Binding Notice}"
+                                   Visibility="{Binding Notice, Converter={x:Static v:VisibleIf.Instance}}" />
+                    </DockPanel>
+                    <Border Grid.ColumnSpan="2" Height="1" VerticalAlignment="Bottom" Background="{StaticResource DividerBrush}" />
                 </Grid>
 
                 <!-- Selected tab -->

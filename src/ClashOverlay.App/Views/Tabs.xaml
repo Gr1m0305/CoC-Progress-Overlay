@@ -246,6 +246,8 @@
                 <Border Grid.Row="2" Style="{StaticResource Card}" Margin="0,12,0,0">
                     <DockPanel>
                         <TextBlock DockPanel.Dock="Top" Style="{StaticResource CardTitle}" Text="{Binding ActiveTitle}" />
+                        <TextBlock DockPanel.Dock="Top" Style="{StaticResource Muted}" TextWrapping="Wrap" Text="{Binding ActiveEmpty}"
+                                   Visibility="{Binding ActiveEmpty, Converter={StaticResource Vis}}" />
                         <ScrollViewer VerticalScrollBarVisibility="Auto" Focusable="False">
                             <ItemsControl Margin="0,0,12,0" ItemsSource="{Binding Active}" Focusable="False" />
                         </ScrollViewer>

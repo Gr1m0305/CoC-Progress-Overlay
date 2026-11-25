@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using System.Windows.Media;
 using System.Windows.Threading;
+using ClashOverlay.Api;
 using ClashOverlay.App.Services;
 using ClashOverlay.Core.Calc;
 using ClashOverlay.Core.Data;
@@ -114,6 +115,10 @@ internal sealed partial class OverlayViewModel : ObservableObject
 
     [ObservableProperty]
     private bool _syncWarning;
+
+    /// <summary>The API data shown is an older copy (the last call failed).</summary>
+    [ObservableProperty]
+    private bool _apiStale;
 
     [ObservableProperty]
     private string? _syncTooltip;
@@ -466,9 +471,25 @@ internal sealed partial class OverlayViewModel : ObservableObject
             return _host.Data.Problem ?? "Game data is not available yet.";
         }
 
-        if (data.Player?.Error is { } e && data.Player.Value is null)
+        if (data.Player?.Error is { } e)
         {
-            return e.IsKeyProblem ? $"API: {e.Message}" : $"API unavailable: {e.Message}";
+            if (data.Player.Value is null)
+            {
+                return e.IsKeyProblem ? $"API: {e.Message}" : $"API unavailable: {e.Message}";
+            }
+
+            // An older copy is shown: say why, and how old it is.
+            var age = data.Player.FetchedAt is { } at ? $" Showing your data from {Fmt.Ago(_host.Time.GetUtcNow() - at)}." : " Showing saved data.";
+            return e.Kind switch
+            {
+                ApiErrorKind.Maintenance => "Clash of Clans is in maintenance." + age,
+                ApiErrorKind.Throttled => "The API asked to slow down." + age,
+                ApiErrorKind.InvalidIp => "Your IP address changed, so the API key stopped working." + age,
+                ApiErrorKind.InvalidKey => "The API key was refused." + age,
+                ApiErrorKind.NoKey => "No API key saved." + age,
+                _ when e.IsTransient => "The Clash of Clans API can't be reached right now." + age,
+                _ => $"API: {e.Message}",
+            };
         }
 
         if (data.ExportProblem is { } p)
@@ -522,6 +543,7 @@ internal sealed partial class OverlayViewModel : ObservableObject
             SelectedAccount?.Account.TownHallChangedAt);
         SyncText = status.Text;
         SyncWarning = status.ExportWarning;
+        ApiStale = status.ApiWarning;
         SyncTooltip = status.WarningReason ?? (report is null ? null : $"Data as of {report.State.AsOf.ToLocalTime():g}");
         foreach (var tab in Tabs)
         {
