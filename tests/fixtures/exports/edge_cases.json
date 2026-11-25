@@ -1,0 +1,49 @@
+{
+  "tag": "#p0lyj2q",
+  "timestamp": 1700000000,
+  "helpers": [
+    { "data": 93000000, "lvl": 6, "helper_cooldown": 72981 },
+    { "data": 93000002, "lvl": 3 }
+  ],
+  "guardians": [ { "data": 107000000, "lvl": 2 } ],
+  "buildings": [
+    { "data": 1000001, "lvl": 16 },
+    { "data": 1000014, "lvl": 12, "timer": 86400 },
+    { "data": 1000013, "lvl": 15, "gear_up": 1 },
+    { "data": 1000013, "lvl": 15, "cnt": 2 },
+    { "data": 1000010, "lvl": 14, "cnt": 50 },
+    { "data": 1000010, "lvl": 15, "cnt": 200 },
+    { "data": 1000012, "lvl": 0, "timer": 600 },
+    { "data": 1000000, "lvl": "12", "cnt": 3 },
+    {
+      "data": 1000097,
+      "types": [
+        { "data": 103000008, "modules": [ { "data": 102000024, "lvl": 2 }, { "data": 102000025, "lvl": 2 } ] }
+      ]
+    },
+    { "data": 9999999, "lvl": 5 },
+    { "lvl": 3 },
+    "not an object"
+  ],
+  "traps": [
+    { "data": 12000000, "lvl": 11, "cnt": 6 },
+    { "data": 12000016, "lvl": 2, "timer": 3600 }
+  ],
+  "units": [
+    { "data": 4000000, "lvl": 10 },
+    { "data": 4000023, "lvl": 9, "timer": 14400, "helper_recurrent": true }
+  ],
+  "siege_machines": [ { "data": 4000051, "lvl": 4 } ],
+  "heroes": [ { "data": 28000000, "lvl": 80 }, { "data": 28000001, "lvl": 75, "timer": 43200 } ],
+  "spells": [ { "data": 26000000, "lvl": 10 } ],
+  "pets": [ { "data": 73000000, "lvl": 10 } ],
+  "equipment": [ { "data": 90000000, "lvl": 15 } ],
+  "decos": [ { "data": 18000000, "cnt": 1 } ],
+  "skins": [ 52000000 ],
+  "emotes": [ 1, 2 ],
+  "boosts": {},
+  "some_future_section": [ { "data": 1, "lvl": 1 } ],
+  "buildings2": [ { "data": 1000034, "lvl": 9 }, { "data": 1000041, "lvl": 8, "cnt": 2 } ],
+  "units2": [ { "data": 4000031, "lvl": 18 } ],
+  "heroes2": [ { "data": 28000003, "lvl": 30 } ]
+}
