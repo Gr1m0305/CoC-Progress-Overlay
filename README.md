@@ -247,8 +247,15 @@ To build the installer, install [Inno Setup](https://jrsoftware.org/isinfo.php) 
 publish as above, then run its compiler. The setup lands in `installer/Output/`.
 
 ```powershell
-& "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" /DAppVersion=1.2.3 installer\ClashOverlay.iss
+winget install JRSoftware.InnoSetup --scope user
 ```
+
+```powershell
+& "$env:LOCALAPPDATA\Programs\Inno Setup 6\ISCC.exe" /DAppVersion=1.2.3 installer\ClashOverlay.iss
+```
+
+A machine-wide Inno Setup install keeps `ISCC.exe` in `${env:ProgramFiles(x86)}\Inno Setup 6`
+instead.
 
 `tools/AssetFetch` is the downloader the app uses for game data and images. Run it on its own with
 `dotnet run --project tools/AssetFetch -- --out <folder>`. Downloaded data and images must never

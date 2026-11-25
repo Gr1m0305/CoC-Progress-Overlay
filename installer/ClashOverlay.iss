@@ -245,6 +245,8 @@ end;
 procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
 var
   Command: String;
+  AppDir: String;
+  I: Integer;
 begin
   if CurUninstallStep = usUninstall then
   begin
@@ -268,6 +270,20 @@ begin
     if RegQueryStringValue(HKCU, '{#RunKey}', '{#RunValue}', Command) and
        (Pos(Lowercase(ExpandConstant('{app}')), Lowercase(Command)) > 0) then
       RegDeleteValue(HKCU, '{#RunKey}', '{#RunValue}');
+
+    { The program folder, once it is empty. Setup only removes a folder it created, and a copy that was closed a
+      moment ago can still hold its exe briefly (error 145, directory not empty), so retry for a few seconds. }
+    AppDir := ExpandConstant('{app}');
+    for I := 1 to 20 do
+    begin
+      if not DirExists(AppDir) or RemoveDir(AppDir) then
+        Break;
+      Sleep(250);
+    end;
+    if DirExists(AppDir) then
+      Log('Could not remove ' + AppDir)
+    else
+      Log('Removed ' + AppDir);
 
     if DeleteData then
     begin

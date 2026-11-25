@@ -46,6 +46,15 @@ public partial class App : Application
         base.OnStartup(e);
         var options = StartupOptions.Parse(e.Args);
 
+        // Listen for the installer before taking the mutex it looks for, so there is no moment when the mutex says
+        // "running" but the exit event does not exist yet.
+        _exitSignal = new EventWaitHandle(false, EventResetMode.ManualReset, ExitEventName);
+        _exitWait = ThreadPool.RegisterWaitForSingleObject(_exitSignal, (_, _) => Dispatcher.BeginInvoke(() =>
+        {
+            _host?.Log.LogInformation("Closing: asked to by the installer");
+            Shutdown();
+        }), null, Timeout.Infinite, true);
+
         // One copy at a time (the installer closes it by this name). A demo runs beside the real app.
         _mutex = new Mutex(true, options.Demo ? DemoMutexName : MutexName, out var first);
         if (!first)
@@ -61,13 +70,6 @@ public partial class App : Application
         }
 
         _host = new AppHost(options);
-        _exitSignal = new EventWaitHandle(false, EventResetMode.ManualReset, ExitEventName);
-        _exitSignal.Reset();
-        _exitWait = ThreadPool.RegisterWaitForSingleObject(_exitSignal, (_, _) => Dispatcher.BeginInvoke(() =>
-        {
-            _host.Log.LogInformation("Closing: asked to by the installer");
-            Shutdown();
-        }), null, Timeout.Infinite, true);
         DispatcherUnhandledException += OnUnhandled;
         AppDomain.CurrentDomain.UnhandledException += (_, args) => _host.Log.LogCritical(args.ExceptionObject as Exception, "Unhandled exception");
         TaskScheduler.UnobservedTaskException += (_, args) =>
