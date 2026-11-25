@@ -1,8 +1,979 @@
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:v="clr-namespace:ClashOverlay.App.Views"
                     xmlns:vm="clr-namespace:ClashOverlay.App.ViewModels">
 
+    <v:VisibleIf x:Key="Vis" />
+
+    <ItemsPanelTemplate x:Key="Wrap">
+        <WrapPanel />
+    </ItemsPanelTemplate>
+    <ItemsPanelTemplate x:Key="Horizontal">
+        <StackPanel Orientation="Horizontal" />
+    </ItemsPanelTemplate>
+
+    <!-- Small pill for the hand-edit actions ("+1", "All ×4", "Undo"). -->
+    <Style x:Key="EditButton" TargetType="Button">
+        <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
+        <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
+        <Setter Property="FontFamily" Value="{StaticResource Inter}" />
+        <Setter Property="FontSize" Value="11" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Padding" Value="8,3" />
+        <Setter Property="Margin" Value="4,0,0,0" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Focusable" Value="False" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="Bd" Background="{TemplateBinding Background}" CornerRadius="6" Padding="{TemplateBinding Padding}">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Bd" Property="Background" Value="{DynamicResource AccentBrush}" />
+                            <Setter Property="Foreground" Value="#14181F" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+    <Style x:Key="UndoButton" TargetType="Button" BasedOn="{StaticResource EditButton}">
+        <Setter Property="Foreground" Value="{StaticResource SubtleTextBrush}" />
+        <Setter Property="Background" Value="#1CFFFFFF" />
+    </Style>
+
+    <!-- Hand-edit actions that appear when the mouse is over a card. -->
+    <Style x:Key="HoverActions" TargetType="StackPanel">
+        <Setter Property="Orientation" Value="Horizontal" />
+        <Setter Property="HorizontalAlignment" Value="Right" />
+        <Setter Property="VerticalAlignment" Value="Top" />
+        <Setter Property="Opacity" Value="0" />
+        <Style.Triggers>
+            <DataTrigger Binding="{Binding IsMouseOver, RelativeSource={RelativeSource AncestorType=Border, AncestorLevel=1}}" Value="True">
+                <Setter Property="Opacity" Value="1" />
+            </DataTrigger>
+        </Style.Triggers>
+    </Style>
+
+    <!-- ===== Shared pieces ===== -->
+
+    <DataTemplate DataType="{x:Type vm:CostItem}">
+        <StackPanel Orientation="Horizontal" Margin="0,0,14,4" Background="Transparent" ToolTip="{Binding Tooltip}">
+            <Grid Width="18" Height="18" VerticalAlignment="Center">
+                <Ellipse Width="10" Height="10" Fill="{Binding Brush}" Visibility="{Binding Icon, Converter={StaticResource Vis}, ConverterParameter=not}" />
+                <Image Source="{Binding Icon}" RenderOptions.BitmapScalingMode="HighQuality" />
+            </Grid>
+            <Image Width="18" Height="18" Margin="-3,0,0,0" Source="{Binding Icon2}" RenderOptions.BitmapScalingMode="HighQuality"
+                   Visibility="{Binding Icon2, Converter={StaticResource Vis}}" />
+            <TextBlock Style="{StaticResource Strong}" FontSize="12" Margin="5,0,0,0" VerticalAlignment="Center" Foreground="{Binding Brush}" Text="{Binding Text}" />
+        </StackPanel>
+    </DataTemplate>
+
+    <DataTemplate DataType="{x:Type vm:Badge}">
+        <Border Style="{StaticResource Badge}" Margin="6,0,0,0" Background="{Binding Background}" ToolTip="{Binding Tooltip}">
+            <TextBlock Style="{StaticResource BadgeText}" FontSize="10" Foreground="{Binding Foreground}" Text="{Binding Text}" />
+        </Border>
+    </DataTemplate>
+
+    <DataTemplate DataType="{x:Type vm:ActiveRow}">
+        <Grid Margin="0,5">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="58" />
+            </Grid.ColumnDefinitions>
+            <v:ItemImage Width="36" Height="36" Source="{Binding Image}" Text="{Binding Name}" />
+            <StackPanel Grid.Column="1" Margin="10,0,10,0" VerticalAlignment="Center">
+                <TextBlock Style="{StaticResource Strong}" FontSize="12" Text="{Binding Name}" />
+                <StackPanel Orientation="Horizontal" Margin="0,1,0,0">
+                    <TextBlock Style="{StaticResource Muted}" Text="{Binding LevelText}" />
+                    <TextBlock Style="{StaticResource Muted}" Text="  ·  " />
+                    <TextBlock Style="{StaticResource Muted}" Text="{Binding Track}" />
+                </StackPanel>
+                <ProgressBar Style="{StaticResource Bar}" Height="4" Margin="0,5,0,0" Value="{Binding Fraction, Mode=OneWay}" Foreground="{Binding Brush}" />
+            </StackPanel>
+            <TextBlock Grid.Column="2" Style="{StaticResource Strong}" FontSize="12" VerticalAlignment="Center" TextAlignment="Right" Text="{Binding TimeLeft}" />
+        </Grid>
+    </DataTemplate>
+
     <DataTemplate DataType="{x:Type vm:MessageTab}">
-        <TextBlock Style="{StaticResource Subtle}" FontSize="15" HorizontalAlignment="Center" VerticalAlignment="Center" Text="{Binding Message}" />
+        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="560">
+            <TextBlock Style="{StaticResource Title}" HorizontalAlignment="Center" Text="{Binding Message}" />
+            <TextBlock Style="{StaticResource Subtle}" FontSize="13" Margin="0,8,0,0" TextAlignment="Center" TextWrapping="Wrap" Text="{Binding Detail}"
+                       Visibility="{Binding Detail, Converter={StaticResource Vis}}" />
+        </StackPanel>
+    </DataTemplate>
+
+    <!-- ===== Overview ===== -->
+
+    <DataTemplate DataType="{x:Type vm:CategoryRow}">
+        <Grid Margin="0,5,0,9" Background="Transparent" ToolTip="{Binding Tooltip}">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="64" />
+            </Grid.ColumnDefinitions>
+            <TextBlock Style="{StaticResource Strong}" Text="{Binding Name}" />
+            <TextBlock Grid.Column="1" Style="{StaticResource Muted}" VerticalAlignment="Center" Text="{Binding Detail}" />
+            <TextBlock Grid.Column="2" Style="{StaticResource Strong}" HorizontalAlignment="Right" Text="{Binding Percent}" />
+            <ProgressBar Grid.Row="1" Grid.ColumnSpan="3" Style="{StaticResource Bar}" Margin="0,6,0,0" Value="{Binding Fraction, Mode=OneWay}" Foreground="{Binding Bar}" />
+        </Grid>
+    </DataTemplate>
+
+    <DataTemplate DataType="{x:Type vm:OverviewTab}">
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="300" />
+                <ColumnDefinition Width="16" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="16" />
+                <ColumnDefinition Width="360" />
+            </Grid.ColumnDefinitions>
+
+            <!-- hall and overall progress -->
+            <Border Style="{StaticResource Card}" Padding="20,18">
+                <StackPanel>
+                    <v:ItemImage Width="150" Height="150" HorizontalAlignment="Center" Source="{Binding HallImage}" Text="{Binding HallTitle}" />
+                    <TextBlock Style="{StaticResource Title}" HorizontalAlignment="Center" Margin="0,10,0,0" Text="{Binding HallTitle}" />
+                    <TextBlock Style="{StaticResource Muted}" HorizontalAlignment="Center" Margin="0,2,0,0" Text="{Binding HallSub}" />
+                    <TextBlock Style="{StaticResource Big}" FontSize="46" HorizontalAlignment="Center" Margin="0,14,0,0" Foreground="{DynamicResource AccentBrush}" Text="{Binding Percent}" />
+                    <TextBlock Style="{StaticResource Subtle}" HorizontalAlignment="Center" Text="maxed for this hall level" />
+                    <ProgressBar Style="{StaticResource Bar}" Height="8" Margin="0,12,0,0" Value="{Binding Fraction, Mode=OneWay}" Foreground="{Binding Bar}" />
+                    <Border HorizontalAlignment="Center" Margin="0,14,0,0" Background="{StaticResource CardBrush}" BorderBrush="{StaticResource CardBorderBrush}"
+                            BorderThickness="1" CornerRadius="9" Padding="3">
+                        <StackPanel Orientation="Horizontal">
+                            <RadioButton Style="{StaticResource Segment}" Padding="12,4" GroupName="progressMode" Content="By levels"
+                                         IsChecked="{Binding IsLevelMode, Mode=OneWay}" Command="{Binding SetModeCommand}" CommandParameter="Levels"
+                                         ToolTip="Every level counts the same" />
+                            <RadioButton Style="{StaticResource Segment}" Padding="12,4" GroupName="progressMode" Content="By time"
+                                         IsChecked="{Binding IsTimeMode, Mode=OneWay}" Command="{Binding SetModeCommand}" CommandParameter="Time"
+                                         ToolTip="Levels weighted by their upgrade time" />
+                        </StackPanel>
+                    </Border>
+                    <TextBlock Style="{StaticResource Muted}" HorizontalAlignment="Center" Margin="0,8,0,0" Text="{Binding OtherModeText}" />
+                    <TextBlock Style="{StaticResource Subtle}" HorizontalAlignment="Center" Margin="0,2,0,0" Text="{Binding ItemsText}" />
+                    <Border HorizontalAlignment="Center" Margin="0,16,0,0" Padding="10,4" CornerRadius="7"
+                            Visibility="{Binding RushText, Converter={StaticResource Vis}}">
+                        <Border.Style>
+                            <Style TargetType="Border">
+                                <Setter Property="Background" Value="#263DDC84" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsRushed}" Value="True">
+                                        <Setter Property="Background" Value="#33FF4D5E" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Border.Style>
+                        <TextBlock FontSize="11.5" Text="{Binding RushText}">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock" BasedOn="{StaticResource Strong}">
+                                    <Setter Property="Foreground" Value="{StaticResource GreenBrush}" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsRushed}" Value="True">
+                                            <Setter Property="Foreground" Value="#FF8A95" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                    </Border>
+                </StackPanel>
+            </Border>
+
+            <!-- categories -->
+            <Border Grid.Column="2" Style="{StaticResource Card}" Padding="18,14">
+                <DockPanel>
+                    <TextBlock DockPanel.Dock="Top" Style="{StaticResource CardTitle}" Text="PROGRESS BY CATEGORY" />
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" Focusable="False">
+                        <ItemsControl ItemsSource="{Binding Categories}" Focusable="False" />
+                    </ScrollViewer>
+                </DockPanel>
+            </Border>
+
+            <!-- time, cost and running upgrades -->
+            <Grid Grid.Column="4">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+                <Border Style="{StaticResource Card}">
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource CardTitle}" Text="TIME TO MAX" />
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition />
+                                <ColumnDefinition />
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+                            <StackPanel Margin="0,0,10,0">
+                                <TextBlock Style="{StaticResource Muted}" Text="Builders, each" />
+                                <TextBlock Style="{StaticResource Strong}" FontSize="20" Margin="0,2,0,0" Foreground="{DynamicResource AccentBrush}" Text="{Binding BuilderTime}" />
+                                <TextBlock Style="{StaticResource Muted}" Margin="0,2,0,0" TextWrapping="Wrap" Text="{Binding BuilderDetail}" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="1">
+                                <TextBlock Style="{StaticResource Muted}" Text="{Binding LabTitle}" />
+                                <TextBlock Style="{StaticResource Strong}" FontSize="20" Margin="0,2,0,0" Foreground="{StaticResource ElixirBrush}" Text="{Binding LabTime}" />
+                            </StackPanel>
+                            <StackPanel Grid.Row="1" Margin="0,12,10,0" Visibility="{Binding PetTime, Converter={StaticResource Vis}}">
+                                <TextBlock Style="{StaticResource Muted}" Text="Pet House" />
+                                <TextBlock Style="{StaticResource Strong}" FontSize="16" Margin="0,2,0,0" Foreground="{StaticResource OrangeBrush}" Text="{Binding PetTime}" />
+                            </StackPanel>
+                            <StackPanel Grid.Row="1" Grid.Column="1" Margin="0,12,0,0" Visibility="{Binding HeroText, Converter={StaticResource Vis}}">
+                                <TextBlock Style="{StaticResource Muted}" Text="Longest hero" />
+                                <TextBlock Style="{StaticResource Strong}" FontSize="13" Margin="0,4,0,0" TextWrapping="Wrap" Text="{Binding HeroText}" />
+                            </StackPanel>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+                <Border Grid.Row="1" Style="{StaticResource Card}" Margin="0,12,0,0">
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource CardTitle}" Text="RESOURCES TO MAX" />
+                        <ItemsControl ItemsSource="{Binding Costs}" ItemsPanel="{StaticResource Wrap}" Focusable="False" />
+                        <TextBlock Style="{StaticResource Muted}" Text="Nothing left to pay for." Visibility="{Binding Costs, Converter={StaticResource Vis}, ConverterParameter=not}" />
+                    </StackPanel>
+                </Border>
+                <Border Grid.Row="2" Style="{StaticResource Card}" Margin="0,12,0,0">
+                    <DockPanel>
+                        <TextBlock DockPanel.Dock="Top" Style="{StaticResource CardTitle}" Text="{Binding ActiveTitle}" />
+                        <ScrollViewer VerticalScrollBarVisibility="Auto" Focusable="False">
+                            <ItemsControl Margin="0,0,12,0" ItemsSource="{Binding Active}" Focusable="False" />
+                        </ScrollViewer>
+                    </DockPanel>
+                </Border>
+            </Grid>
+        </Grid>
+    </DataTemplate>
+
+    <!-- ===== Rushed ===== -->
+
+    <DataTemplate DataType="{x:Type vm:RushRow}">
+        <Border Margin="0,0,10,6" Padding="10,6" CornerRadius="8" Background="{StaticResource CardBrush}">
+            <Border.Style>
+                <Style TargetType="Border">
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding IsScored}" Value="False">
+                            <Setter Property="Opacity" Value="0.6" />
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </Border.Style>
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <v:ItemImage Width="44" Height="44" Source="{Binding Image}" Text="{Binding Name}" />
+                <StackPanel Grid.Column="1" Margin="12,0" VerticalAlignment="Center">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Style="{StaticResource Strong}" Text="{Binding Name}" />
+                        <TextBlock Style="{StaticResource Subtle}" Margin="6,0,0,0" Text="{Binding CountText}" />
+                    </StackPanel>
+                    <TextBlock Style="{StaticResource Muted}" Margin="0,3,0,0" Text="{Binding LevelText}" />
+                </StackPanel>
+                <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Style="{StaticResource Muted}" VerticalAlignment="Center" Text="{Binding Note}" />
+                    <ContentPresenter Content="{Binding Behind}" />
+                </StackPanel>
+            </Grid>
+        </Border>
+    </DataTemplate>
+
+    <DataTemplate DataType="{x:Type vm:RushChip}">
+        <Border Margin="0,0,8,8" Padding="10,5" CornerRadius="8" Background="{StaticResource CardBrush}" BorderBrush="{StaticResource CardBorderBrush}" BorderThickness="1">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Style="{StaticResource Strong}" FontSize="12" Text="{Binding Name}" />
+                <TextBlock Style="{StaticResource Muted}" Margin="8,0,0,0" VerticalAlignment="Center" Text="{Binding Detail}" />
+            </StackPanel>
+        </Border>
+    </DataTemplate>
+
+    <DataTemplate DataType="{x:Type vm:RushedTab}">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <Border Style="{StaticResource Card}" Padding="18,14">
+                <StackPanel>
+                    <TextBlock Text="{Binding Headline}">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock" BasedOn="{StaticResource Title}">
+                                <Setter Property="Foreground" Value="{StaticResource GreenBrush}" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsRushed}" Value="True">
+                                        <Setter Property="Foreground" Value="#FF8A95" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                    <TextBlock Style="{StaticResource Subtle}" Margin="0,4,0,0" TextWrapping="Wrap" Text="{Binding SubLine}" />
+                </StackPanel>
+            </Border>
+            <ItemsControl Grid.Row="1" Margin="0,12,0,4" ItemsSource="{Binding Chips}" ItemsPanel="{StaticResource Wrap}" Focusable="False" />
+            <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" Focusable="False">
+                <ItemsControl ItemsSource="{Binding Rows}" Focusable="False">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <UniformGrid Columns="2" VerticalAlignment="Top" />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                </ItemsControl>
+            </ScrollViewer>
+            <TextBlock Grid.Row="3" Style="{StaticResource Muted}" Margin="4,8,0,0" Text="{Binding WallsText}" Visibility="{Binding WallsText, Converter={StaticResource Vis}}" />
+        </Grid>
+    </DataTemplate>
+
+    <!-- ===== Builder upgrades and laboratories ===== -->
+
+    <DataTemplate DataType="{x:Type vm:UpgradeRowVm}">
+        <Grid x:Name="RowRoot" Height="54" Background="Transparent">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="86" />
+                <ColumnDefinition Width="190" />
+                <ColumnDefinition Width="150" />
+            </Grid.ColumnDefinitions>
+            <v:ItemImage Width="44" Height="44" Source="{Binding CurrentImage}" Text="{Binding Name}" />
+            <Path Grid.Column="1" Margin="6,0" VerticalAlignment="Center" Data="M0,0 L4,4 L0,8" Stroke="{StaticResource MutedTextBrush}" StrokeThickness="1.6"
+                  StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round" />
+            <v:ItemImage Grid.Column="2" Width="44" Height="44" Source="{Binding NextImage}" Text="{Binding Name}" />
+            <StackPanel Grid.Column="3" Margin="12,0,8,0" VerticalAlignment="Center">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Style="{StaticResource Strong}" Text="{Binding Name}" />
+                    <TextBlock Style="{StaticResource Subtle}" Margin="6,0,0,0" FontWeight="SemiBold" Text="{Binding CountText}" />
+                    <ItemsControl ItemsSource="{Binding Badges}" ItemsPanel="{StaticResource Horizontal}" Focusable="False" />
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Margin="0,3,0,0">
+                    <TextBlock Style="{StaticResource Subtle}" Text="{Binding LevelText}" />
+                    <TextBlock Style="{StaticResource Muted}" Text="  ·  " VerticalAlignment="Center" />
+                    <TextBlock Style="{StaticResource Muted}" VerticalAlignment="Center" Text="{Binding TargetText}" />
+                </StackPanel>
+            </StackPanel>
+            <TextBlock Grid.Column="4" Style="{StaticResource Strong}" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,14,0" Text="{Binding Time}" />
+            <ItemsControl Grid.Column="5" VerticalAlignment="Center" Margin="0,4,0,0" ItemsSource="{Binding Cost}" ItemsPanel="{StaticResource Wrap}" Focusable="False" />
+            <StackPanel x:Name="Edit" Grid.Column="6" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center" Opacity="0" IsHitTestVisible="False">
+                <Button Style="{StaticResource EditButton}" Content="+1" Command="{Binding RaiseOneCommand}" Visibility="{Binding CanRaise, Converter={StaticResource Vis}}"
+                        ToolTip="Mark one as upgraded. Kept until an export or API sync shows the new level." />
+                <Button Style="{StaticResource EditButton}" Content="{Binding RaiseAllText}" Command="{Binding RaiseAllCommand}" Visibility="{Binding CanRaiseAll, Converter={StaticResource Vis}}"
+                        ToolTip="Mark every copy at this level as upgraded" />
+                <Button Style="{StaticResource UndoButton}" Content="Undo" Command="{Binding UndoCommand}" Visibility="{Binding CanUndo, Converter={StaticResource Vis}}"
+                        ToolTip="Take back the last hand edit of this item" />
+            </StackPanel>
+        </Grid>
+        <DataTemplate.Triggers>
+            <DataTrigger Binding="{Binding IsLocked}" Value="True">
+                <Setter TargetName="RowRoot" Property="Opacity" Value="0.55" />
+            </DataTrigger>
+            <DataTrigger Binding="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=ListBoxItem}}" Value="True">
+                <Setter TargetName="Edit" Property="Opacity" Value="1" />
+                <Setter TargetName="Edit" Property="IsHitTestVisible" Value="True" />
+            </DataTrigger>
+            <DataTrigger Binding="{Binding IsMouseOver, RelativeSource={RelativeSource AncestorType=ListBoxItem}}" Value="True">
+                <Setter TargetName="Edit" Property="Opacity" Value="1" />
+                <Setter TargetName="Edit" Property="IsHitTestVisible" Value="True" />
+            </DataTrigger>
+        </DataTemplate.Triggers>
+    </DataTemplate>
+
+    <DataTemplate DataType="{x:Type vm:LevelCell}">
+        <Border x:Name="Cell" Width="46" Margin="0,0,4,4" Padding="2,4,2,2" CornerRadius="7" Background="Transparent" BorderThickness="1" BorderBrush="Transparent"
+                ToolTip="{Binding Tooltip}">
+            <StackPanel>
+                <v:ItemImage Width="36" Height="36" HorizontalAlignment="Center" Source="{Binding Image}" Text="{Binding Name}" Dim="{Binding AboveHall}" />
+                <TextBlock x:Name="Num" Style="{StaticResource Subtle}" FontSize="11" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,3,0,0" Text="{Binding Level}" />
+                <TextBlock x:Name="Mark" Style="{StaticResource Muted}" FontSize="9.5" Height="13" HorizontalAlignment="Center" Text="{Binding Mark}" />
+            </StackPanel>
+        </Border>
+        <DataTemplate.Triggers>
+            <DataTrigger Binding="{Binding AboveHall}" Value="True">
+                <Setter TargetName="Num" Property="Foreground" Value="{StaticResource MutedTextBrush}" />
+            </DataTrigger>
+            <DataTrigger Binding="{Binding IsHallMax}" Value="True">
+                <Setter TargetName="Cell" Property="BorderBrush" Value="#33FFFFFF" />
+            </DataTrigger>
+            <DataTrigger Binding="{Binding IsOwned}" Value="True">
+                <Setter TargetName="Cell" Property="Background" Value="{DynamicResource AccentSoftBrush}" />
+                <Setter TargetName="Cell" Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+                <Setter TargetName="Num" Property="Foreground" Value="{DynamicResource AccentBrush}" />
+                <Setter TargetName="Mark" Property="Foreground" Value="{DynamicResource AccentBrush}" />
+            </DataTrigger>
+        </DataTemplate.Triggers>
+    </DataTemplate>
+
+    <DataTemplate DataType="{x:Type vm:NewsItem}">
+        <Grid Margin="0,4">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <v:ItemImage Width="36" Height="36" Source="{Binding Image}" Text="{Binding Name}" />
+            <StackPanel Grid.Column="1" Margin="10,0,0,0" VerticalAlignment="Center">
+                <TextBlock Style="{StaticResource Strong}" FontSize="12" Text="{Binding Name}" />
+                <TextBlock x:Name="Detail" Style="{StaticResource Muted}" Margin="0,1,0,0" Text="{Binding Detail}" />
+            </StackPanel>
+        </Grid>
+        <DataTemplate.Triggers>
+            <DataTrigger Binding="{Binding IsNew}" Value="True">
+                <Setter TargetName="Detail" Property="Foreground" Value="{DynamicResource AccentBrush}" />
+                <Setter TargetName="Detail" Property="FontWeight" Value="SemiBold" />
+            </DataTrigger>
+        </DataTemplate.Triggers>
+    </DataTemplate>
+
+    <DataTemplate DataType="{x:Type vm:UpgradesTab}">
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="16" />
+                <ColumnDefinition Width="340" />
+            </Grid.ColumnDefinitions>
+
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <DockPanel Margin="4,0,0,10" Height="20">
+                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Visibility="{Binding EditsText, Converter={StaticResource Vis}}">
+                        <TextBlock Style="{StaticResource Muted}" VerticalAlignment="Center" Foreground="{StaticResource BlueBrush}" Text="{Binding EditsText}" />
+                        <Button Style="{StaticResource UndoButton}" Margin="8,0,0,0" Padding="8,1" Content="Undo last" Command="{Binding UndoLatestCommand}"
+                                ToolTip="Take back the latest hand edit in this village" />
+                    </StackPanel>
+                    <TextBlock Style="{StaticResource Subtle}" VerticalAlignment="Center" Text="{Binding Summary}" />
+                </DockPanel>
+                <Border Grid.Row="1" Style="{StaticResource Card}" Padding="6">
+                    <ListBox Style="{StaticResource PlainList}" ItemsSource="{Binding Rows}" SelectedItem="{Binding SelectedRow, Mode=TwoWay}"
+                             v:ListBehavior.ScrollSelectedIntoView="True"
+                             ScrollViewer.CanContentScroll="True" VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.ScrollUnit="Pixel" />
+                </Border>
+                <Border Grid.Row="2" Style="{StaticResource Card}" Margin="0,12,0,0" Visibility="{Binding StripTitle, Converter={StaticResource Vis}}">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Style="{StaticResource CardTitle}" Text="EVERY LEVEL · " />
+                            <TextBlock Style="{StaticResource CardTitle}" Foreground="{StaticResource TextBrush}" Text="{Binding StripTitle}" />
+                        </StackPanel>
+                        <TextBlock Style="{StaticResource Muted}" Margin="0,-4,0,8" Text="{Binding StripDetail}" />
+                        <ItemsControl ItemsSource="{Binding Strip}" ItemsPanel="{StaticResource Wrap}" Focusable="False" />
+                    </StackPanel>
+                </Border>
+            </Grid>
+
+            <Grid Grid.Column="2">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+                <Border Style="{StaticResource Card}" MaxHeight="230">
+                    <DockPanel>
+                        <TextBlock DockPanel.Dock="Top" Style="{StaticResource CardTitle}" Text="IN PROGRESS" />
+                        <TextBlock DockPanel.Dock="Top" Style="{StaticResource Muted}" Text="Nothing upgrading here." Visibility="{Binding Active, Converter={StaticResource Vis}, ConverterParameter=not}" />
+                        <ScrollViewer VerticalScrollBarVisibility="Auto" Focusable="False">
+                            <ItemsControl Margin="0,0,12,0" ItemsSource="{Binding Active}" Focusable="False" />
+                        </ScrollViewer>
+                    </DockPanel>
+                </Border>
+                <Border Grid.Row="1" Style="{StaticResource Card}" Margin="0,12,0,0">
+                    <DockPanel>
+                        <TextBlock DockPanel.Dock="Top" Style="{StaticResource CardTitle}" Foreground="{DynamicResource AccentBrush}" Text="{Binding NewsTitle}" />
+                        <ScrollViewer VerticalScrollBarVisibility="Auto" Focusable="False">
+                            <StackPanel Margin="0,0,12,0">
+                                <ItemsControl ItemsSource="{Binding News}" Focusable="False" />
+                                <TextBlock Style="{StaticResource Muted}" Margin="0,8,0,0" TextWrapping="Wrap" Text="{Binding NewsFooter}"
+                                           Visibility="{Binding NewsFooter, Converter={StaticResource Vis}}" />
+                            </StackPanel>
+                        </ScrollViewer>
+                    </DockPanel>
+                </Border>
+            </Grid>
+        </Grid>
+    </DataTemplate>
+
+    <!-- ===== Heroes and pets ===== -->
+
+    <DataTemplate DataType="{x:Type vm:GearChip}">
+        <Grid Width="36" Height="36" Margin="0,0,5,5" Background="Transparent" ToolTip="{Binding Name}">
+            <v:ItemImage Source="{Binding Image}" Text="{Binding Name}" Dim="{Binding Dim}" />
+            <Border Background="#D9101418" CornerRadius="4" Padding="3,0" HorizontalAlignment="Right" VerticalAlignment="Bottom">
+                <TextBlock x:Name="Lvl" Style="{StaticResource BadgeText}" FontSize="9.5" Text="{Binding LevelText}" />
+            </Border>
+        </Grid>
+        <DataTemplate.Triggers>
+            <DataTrigger Binding="{Binding IsEpic}" Value="True">
+                <Setter TargetName="Lvl" Property="Foreground" Value="#D9A6FF" />
+            </DataTrigger>
+        </DataTemplate.Triggers>
+    </DataTemplate>
+
+    <DataTemplate x:Key="HeroCard" DataType="{x:Type vm:UnitCard}">
+        <Border Style="{StaticResource Card}" Margin="0,0,12,0" Padding="12">
+            <Grid>
+                <StackPanel>
+                    <v:ItemImage Width="104" Height="104" HorizontalAlignment="Center" Source="{Binding Image}" Text="{Binding Name}" Dim="{Binding NotUnlocked}" />
+                    <TextBlock Style="{StaticResource Strong}" FontSize="14" HorizontalAlignment="Center" Margin="0,8,0,0" Text="{Binding Name}" />
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,2,0,0">
+                        <TextBlock Style="{StaticResource Strong}" Foreground="{DynamicResource AccentBrush}" Text="{Binding LevelText}" />
+                        <TextBlock Style="{StaticResource Muted}" Margin="4,0,0,0" VerticalAlignment="Center" Text="{Binding MaxText}" />
+                    </StackPanel>
+                    <ProgressBar Style="{StaticResource Bar}" Margin="0,8,0,0" Value="{Binding Fraction, Mode=OneWay}" Foreground="{Binding Bar}" />
+                    <DockPanel Margin="0,6,0,0">
+                        <TextBlock DockPanel.Dock="Right" Style="{StaticResource Strong}" FontSize="12" Text="{Binding Timer}" />
+                        <TextBlock Style="{StaticResource Subtle}" Text="{Binding Status}" />
+                    </DockPanel>
+                    <ItemsControl Margin="0,6,0,0" ItemsSource="{Binding NextCost}" ItemsPanel="{StaticResource Wrap}" Focusable="False" />
+                    <Border Style="{StaticResource Badge}" Margin="0,4,0,0" Background="#26FFFFFF" Visibility="{Binding LockedReason, Converter={StaticResource Vis}}">
+                        <TextBlock Style="{StaticResource BadgeText}" FontSize="10" Foreground="{StaticResource SubtleTextBrush}" Text="{Binding LockedReason}" />
+                    </Border>
+                    <TextBlock Style="{StaticResource Muted}" Margin="0,2,0,0" Foreground="{StaticResource BlueBrush}" Text="{Binding EditedText}" Visibility="{Binding CanUndo, Converter={StaticResource Vis}}" />
+                    <TextBlock Style="{StaticResource CardTitle}" Margin="0,10,0,6" Text="EQUIPMENT" Visibility="{Binding Gear, Converter={StaticResource Vis}}" />
+                    <ItemsControl ItemsSource="{Binding Gear}" ItemsPanel="{StaticResource Wrap}" Focusable="False" />
+                </StackPanel>
+                <StackPanel Style="{StaticResource HoverActions}" Margin="0,-4,-4,0">
+                    <Button Style="{StaticResource EditButton}" Content="+1" Command="{Binding RaiseCommand}" Visibility="{Binding CanRaise, Converter={StaticResource Vis}}"
+                            ToolTip="Mark one level as done. Kept until the API shows the new level." />
+                    <Button Style="{StaticResource UndoButton}" Content="Undo" Command="{Binding UndoCommand}" Visibility="{Binding CanUndo, Converter={StaticResource Vis}}" />
+                </StackPanel>
+            </Grid>
+        </Border>
+    </DataTemplate>
+
+    <DataTemplate x:Key="PetCard" DataType="{x:Type vm:UnitCard}">
+        <Border Style="{StaticResource Card}" Margin="0,0,12,12" Padding="10,8">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <v:ItemImage Width="48" Height="48" VerticalAlignment="Top" Source="{Binding Image}" Text="{Binding Name}" Dim="{Binding NotUnlocked}" />
+                <StackPanel Grid.Column="1" Margin="10,0,0,0">
+                    <TextBlock Style="{StaticResource Strong}" FontSize="12" Text="{Binding Name}" />
+                    <StackPanel Orientation="Horizontal" Margin="0,1,0,0">
+                        <TextBlock Style="{StaticResource Subtle}" FontWeight="SemiBold" Foreground="{DynamicResource AccentBrush}" Text="{Binding LevelText}" />
+                        <TextBlock Style="{StaticResource Muted}" Margin="4,0,0,0" VerticalAlignment="Center" Text="{Binding MaxText}" />
+                    </StackPanel>
+                    <ProgressBar Style="{StaticResource Bar}" Height="4" Margin="0,6,0,0" Value="{Binding Fraction, Mode=OneWay}" Foreground="{Binding Bar}" />
+                    <DockPanel Margin="0,4,0,0">
+                        <TextBlock DockPanel.Dock="Right" Style="{StaticResource Strong}" FontSize="11" Text="{Binding Timer}" />
+                        <TextBlock Style="{StaticResource Muted}" Text="{Binding Status}" />
+                    </DockPanel>
+                    <TextBlock Style="{StaticResource Muted}" Foreground="{StaticResource BlueBrush}" Text="{Binding EditedText}" Visibility="{Binding CanUndo, Converter={StaticResource Vis}}" />
+                </StackPanel>
+                <StackPanel Grid.ColumnSpan="2" Style="{StaticResource HoverActions}" Margin="0,-2,-4,0">
+                    <Button Style="{StaticResource EditButton}" Content="+1" Command="{Binding RaiseCommand}" Visibility="{Binding CanRaise, Converter={StaticResource Vis}}"
+                            ToolTip="Mark one level as done. Kept until the API shows the new level." />
+                    <Button Style="{StaticResource UndoButton}" Content="Undo" Command="{Binding UndoCommand}" Visibility="{Binding CanUndo, Converter={StaticResource Vis}}" />
+                </StackPanel>
+            </Grid>
+        </Border>
+    </DataTemplate>
+
+    <DataTemplate DataType="{x:Type vm:HeroesTab}">
+        <ScrollViewer VerticalScrollBarVisibility="Auto" Focusable="False">
+            <StackPanel>
+                <TextBlock Style="{StaticResource Subtle}" Margin="4,0,0,10" Text="{Binding Summary}" />
+                <ItemsControl ItemsSource="{Binding Heroes}" ItemTemplate="{StaticResource HeroCard}" Focusable="False" Margin="0,0,-12,0">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <UniformGrid Rows="1" />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                </ItemsControl>
+                <TextBlock Style="{StaticResource Subtle}" Margin="4,16,0,10" Text="{Binding PetSummary}" Visibility="{Binding Pets, Converter={StaticResource Vis}}" />
+                <ItemsControl ItemsSource="{Binding Pets}" ItemTemplate="{StaticResource PetCard}" Focusable="False" Margin="0,0,-12,0">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <UniformGrid Columns="6" />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                </ItemsControl>
+            </StackPanel>
+        </ScrollViewer>
+    </DataTemplate>
+
+    <!-- ===== Equipment ===== -->
+
+    <DataTemplate DataType="{x:Type vm:GearRow}">
+        <Border Margin="0,0,0,4" Padding="0,4" Background="Transparent">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <v:ItemImage Width="38" Height="38" VerticalAlignment="Top" Source="{Binding Image}" Text="{Binding Name}" Dim="{Binding NotUnlocked}" />
+                <StackPanel Grid.Column="1" Margin="10,0,0,0">
+                    <DockPanel>
+                        <TextBlock DockPanel.Dock="Right" Style="{StaticResource Subtle}" FontWeight="SemiBold" Text="{Binding LevelText}" />
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Style="{StaticResource Strong}" FontSize="12" Text="{Binding Name}" />
+                            <Border Style="{StaticResource Badge}" Margin="6,0,0,0" Padding="5,0" Background="#33B15CFF" Visibility="{Binding IsEpic, Converter={StaticResource Vis}}">
+                                <TextBlock Style="{StaticResource BadgeText}" FontSize="9" Foreground="#D9A6FF" Text="EPIC" />
+                            </Border>
+                            <TextBlock Style="{StaticResource Muted}" Margin="6,0,0,0" VerticalAlignment="Center" Foreground="{StaticResource BlueBrush}" Text="edited"
+                                       Visibility="{Binding CanUndo, Converter={StaticResource Vis}}" />
+                        </StackPanel>
+                    </DockPanel>
+                    <ProgressBar Style="{StaticResource Bar}" Height="4" Margin="0,5,0,4" Value="{Binding Fraction, Mode=OneWay}" Foreground="{Binding Bar}" />
+                    <Grid>
+                        <ItemsControl ItemsSource="{Binding OreLeft}" ItemsPanel="{StaticResource Wrap}" Focusable="False" />
+                        <StackPanel Style="{StaticResource HoverActions}" VerticalAlignment="Center">
+                            <Button Style="{StaticResource EditButton}" Padding="7,1" Content="+1" Command="{Binding RaiseCommand}" Visibility="{Binding CanRaise, Converter={StaticResource Vis}}"
+                                    ToolTip="Mark one level as done. Kept until the API shows the new level." />
+                            <Button Style="{StaticResource UndoButton}" Padding="7,1" Content="Undo" Command="{Binding UndoCommand}" Visibility="{Binding CanUndo, Converter={StaticResource Vis}}" />
+                        </StackPanel>
+                    </Grid>
+                </StackPanel>
+            </Grid>
+        </Border>
+    </DataTemplate>
+
+    <DataTemplate DataType="{x:Type vm:GearGroup}">
+        <Border Style="{StaticResource Card}" Margin="0,0,12,12" Padding="12,10">
+            <StackPanel>
+                <Grid Margin="0,0,0,8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <v:ItemImage Width="32" Height="32" Source="{Binding Portrait}" Text="{Binding Hero}" />
+                    <TextBlock Grid.Column="1" Style="{StaticResource Strong}" FontSize="14" Margin="10,0,0,0" VerticalAlignment="Center" Text="{Binding Hero}" />
+                    <TextBlock Grid.Column="2" Style="{StaticResource Muted}" VerticalAlignment="Center" Text="{Binding Detail}" />
+                </Grid>
+                <ItemsControl ItemsSource="{Binding Items}" Focusable="False" />
+            </StackPanel>
+        </Border>
+    </DataTemplate>
+
+    <DataTemplate DataType="{x:Type vm:EquipmentTab}">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+            <Grid Margin="4,0,0,10">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Style="{StaticResource Subtle}" VerticalAlignment="Center" Text="{Binding Summary}" />
+                <TextBlock Grid.Column="1" Style="{StaticResource Muted}" Margin="0,0,12,0" VerticalAlignment="Center" Text="{Binding OreTitle}" />
+                <ItemsControl Grid.Column="2" Margin="0,4,0,0" ItemsSource="{Binding Ore}" ItemsPanel="{StaticResource Horizontal}" Focusable="False" />
+            </Grid>
+            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Focusable="False">
+                <ItemsControl ItemsSource="{Binding Groups}" Focusable="False" Margin="0,0,-12,0">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <UniformGrid Columns="3" VerticalAlignment="Top" />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                </ItemsControl>
+            </ScrollViewer>
+        </Grid>
+    </DataTemplate>
+
+    <!-- ===== Profile and war ===== -->
+
+    <DataTemplate DataType="{x:Type vm:Stat}">
+        <Grid Margin="0,0,10,10">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Image Width="22" Height="22" Margin="0,0,8,0" VerticalAlignment="Center" Source="{Binding Icon}" RenderOptions.BitmapScalingMode="HighQuality"
+                   Visibility="{Binding Icon, Converter={StaticResource Vis}}" />
+            <StackPanel Grid.Column="1">
+                <TextBlock Style="{StaticResource Muted}" Text="{Binding Label}" />
+                <TextBlock Style="{StaticResource Strong}" FontSize="14" Margin="0,1,0,0" Text="{Binding Value}" />
+            </StackPanel>
+        </Grid>
+    </DataTemplate>
+
+    <DataTemplate DataType="{x:Type vm:LabelChip}">
+        <Grid Width="30" Height="30" Margin="0,0,6,0" Background="Transparent" ToolTip="{Binding Name}">
+            <v:ItemImage Source="{Binding Image}" Text="{Binding Name}" />
+        </Grid>
+    </DataTemplate>
+
+    <DataTemplate DataType="{x:Type vm:AchievementRow}">
+        <Grid Margin="0,4,0,6" Background="Transparent" ToolTip="{Binding Info}">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Style="{StaticResource Strong}" FontSize="12" Text="{Binding Name}" MaxWidth="170" />
+                <TextBlock x:Name="S1" Margin="6,0,0,0" FontSize="11" VerticalAlignment="Center" Foreground="#3AFFFFFF" Text="★" />
+                <TextBlock x:Name="S2" FontSize="11" VerticalAlignment="Center" Foreground="#3AFFFFFF" Text="★" />
+                <TextBlock x:Name="S3" FontSize="11" VerticalAlignment="Center" Foreground="#3AFFFFFF" Text="★" />
+            </StackPanel>
+            <TextBlock Grid.Column="1" Style="{StaticResource Muted}" VerticalAlignment="Center" Text="{Binding Progress}" />
+            <ProgressBar Grid.Row="1" Grid.ColumnSpan="2" Style="{StaticResource Bar}" Height="4" Margin="0,5,0,0" Value="{Binding Fraction, Mode=OneWay}"
+                         Foreground="{StaticResource GoldBarBrush}" />
+        </Grid>
+        <DataTemplate.Triggers>
+            <DataTrigger Binding="{Binding Star1}" Value="True">
+                <Setter TargetName="S1" Property="Foreground" Value="{StaticResource GoldBrush}" />
+            </DataTrigger>
+            <DataTrigger Binding="{Binding Star2}" Value="True">
+                <Setter TargetName="S2" Property="Foreground" Value="{StaticResource GoldBrush}" />
+            </DataTrigger>
+            <DataTrigger Binding="{Binding Star3}" Value="True">
+                <Setter TargetName="S3" Property="Foreground" Value="{StaticResource GoldBrush}" />
+            </DataTrigger>
+        </DataTemplate.Triggers>
+    </DataTemplate>
+
+    <DataTemplate x:Key="AchievementsCard" DataType="{x:Type vm:ProfileTab}">
+        <Border Style="{StaticResource Card}" Padding="16,12">
+            <DockPanel>
+                <TextBlock DockPanel.Dock="Top" Style="{StaticResource CardTitle}" Text="ACHIEVEMENTS" />
+                <TextBlock DockPanel.Dock="Top" Style="{StaticResource Subtle}" Text="{Binding AchievementText}" />
+                <ProgressBar DockPanel.Dock="Top" Style="{StaticResource Bar}" Margin="0,8,0,10" Value="{Binding AchievementFraction, Mode=OneWay}"
+                             Foreground="{StaticResource GoldBarBrush}" />
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Focusable="False">
+                    <ItemsControl Margin="0,0,8,0" ItemsSource="{Binding Achievements}" Focusable="False" />
+                </ScrollViewer>
+            </DockPanel>
+        </Border>
+    </DataTemplate>
+
+    <DataTemplate DataType="{x:Type vm:ProfileTab}">
+        <Grid>
+            <!-- no API data: say so -->
+            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="520" Visibility="{Binding HasPlayer, Converter={StaticResource Vis}, ConverterParameter=not}">
+                <v:ItemImage Width="96" Height="96" HorizontalAlignment="Center" Source="{Binding HallImage}" Text="{Binding HallText}" />
+                <TextBlock Style="{StaticResource Title}" HorizontalAlignment="Center" Margin="0,10,0,0" Text="{Binding Name}" />
+                <TextBlock Style="{StaticResource Subtle}" FontSize="13" Margin="0,8,0,0" TextAlignment="Center" TextWrapping="Wrap"
+                           Text="Profile, clan and war details come from the Clash of Clans API, which has not answered for this account yet." />
+            </StackPanel>
+
+            <Grid Visibility="{Binding HasPlayer, Converter={StaticResource Vis}}">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="360" />
+                    <ColumnDefinition Width="16" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="16" />
+                    <ColumnDefinition Width="360" />
+                </Grid.ColumnDefinitions>
+
+                <!-- player -->
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+                    <Border Style="{StaticResource Card}" Padding="16,14">
+                        <StackPanel>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <v:ItemImage Width="72" Height="72" Source="{Binding HallImage}" Text="{Binding HallText}" />
+                                <StackPanel Grid.Column="1" Margin="14,0,0,0" VerticalAlignment="Center">
+                                    <TextBlock Style="{StaticResource Title}" FontSize="19" Text="{Binding Name}" />
+                                    <TextBlock Style="{StaticResource Muted}" Margin="0,2,0,0" Text="{Binding Tag}" />
+                                    <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                                        <TextBlock Style="{StaticResource Subtle}" FontWeight="SemiBold" Foreground="{DynamicResource AccentBrush}" Text="{Binding HallText}" />
+                                        <TextBlock Style="{StaticResource Muted}" Text="  ·  " VerticalAlignment="Center" />
+                                        <TextBlock Style="{StaticResource Subtle}" Text="{Binding XpText}" />
+                                    </StackPanel>
+                                    <TextBlock Style="{StaticResource Subtle}" Margin="0,2,0,0" Text="{Binding RoleText}" />
+                                </StackPanel>
+                            </Grid>
+                            <ItemsControl Margin="0,12,0,0" ItemsSource="{Binding Labels}" ItemsPanel="{StaticResource Horizontal}" Focusable="False"
+                                          Visibility="{Binding Labels, Converter={StaticResource Vis}}" />
+                        </StackPanel>
+                    </Border>
+                    <Border Grid.Row="1" Style="{StaticResource Card}" Margin="0,12,0,0" Padding="16,12">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <v:ItemImage Width="56" Height="56" Source="{Binding LeagueImage}" Text="{Binding LeagueName}" />
+                            <StackPanel Grid.Column="1" Margin="12,0,0,0" VerticalAlignment="Center">
+                                <TextBlock Style="{StaticResource Muted}" Text="LEAGUE" FontWeight="SemiBold" />
+                                <TextBlock Style="{StaticResource Strong}" FontSize="14" Margin="0,2,0,0" Text="{Binding LeagueName}" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="2" VerticalAlignment="Center">
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                                    <Image Width="22" Height="22" Margin="0,0,6,0" Source="{Binding TrophyIcon}" RenderOptions.BitmapScalingMode="HighQuality" />
+                                    <TextBlock Style="{StaticResource Big}" FontSize="24" Text="{Binding Trophies}" />
+                                </StackPanel>
+                                <TextBlock Style="{StaticResource Muted}" HorizontalAlignment="Right" Text="{Binding BestTrophies}" />
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+                    <Border Grid.Row="2" Style="{StaticResource Card}" Margin="0,12,0,0">
+                        <DockPanel>
+                            <TextBlock DockPanel.Dock="Top" Style="{StaticResource CardTitle}" Text="STATS" />
+                            <ItemsControl ItemsSource="{Binding Stats}" Focusable="False">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <UniformGrid Columns="2" VerticalAlignment="Top" />
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                            </ItemsControl>
+                        </DockPanel>
+                    </Border>
+                </Grid>
+
+                <!-- clan and war -->
+                <Grid Grid.Column="2">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+                    <Border Style="{StaticResource Card}" Padding="16,12">
+                        <StackPanel>
+                            <TextBlock Style="{StaticResource CardTitle}" Text="CLAN" />
+                            <TextBlock Style="{StaticResource Subtle}" Text="Not in a clan." Visibility="{Binding HasClan, Converter={StaticResource Vis}, ConverterParameter=not}" />
+                            <Grid Visibility="{Binding HasClan, Converter={StaticResource Vis}}">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <StackPanel>
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Style="{StaticResource Title}" FontSize="16" Text="{Binding ClanName}" />
+                                        <TextBlock Style="{StaticResource Muted}" Margin="8,0,0,0" VerticalAlignment="Center" Text="{Binding ClanTag}" />
+                                    </StackPanel>
+                                    <TextBlock Style="{StaticResource Subtle}" Margin="0,4,0,0" Text="{Binding ClanLevel}" />
+                                    <TextBlock Style="{StaticResource Muted}" Margin="0,2,0,0" Text="{Binding ClanDetail}" />
+                                    <TextBlock Style="{StaticResource Muted}" Margin="0,2,0,0" Text="{Binding CapitalLeagueName}" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="1" VerticalAlignment="Center" Visibility="{Binding WarLeagueName, Converter={StaticResource Vis}}">
+                                    <v:ItemImage Width="48" Height="48" HorizontalAlignment="Center" Source="{Binding WarLeagueImage}" Text="{Binding WarLeagueName}" />
+                                    <TextBlock Style="{StaticResource Muted}" HorizontalAlignment="Center" Margin="0,4,0,0" Text="{Binding WarLeagueName}" />
+                                </StackPanel>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+                    <Border Grid.Row="1" Style="{StaticResource Card}" Margin="0,12,0,0" Padding="16,12" Visibility="{Binding IsHome, Converter={StaticResource Vis}}">
+                        <StackPanel>
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                <Image Width="20" Height="20" Margin="0,0,8,0" VerticalAlignment="Center" Source="{Binding WarIcon}" RenderOptions.BitmapScalingMode="HighQuality"
+                                       Visibility="{Binding WarIcon, Converter={StaticResource Vis}}" />
+                                <TextBlock Style="{StaticResource CardTitle}" Margin="0" VerticalAlignment="Center" Text="{Binding WarTitle}" />
+                            </StackPanel>
+                            <TextBlock Style="{StaticResource Muted}" Text="Loading clan data…" Visibility="{Binding ProfileLoaded, Converter={StaticResource Vis}, ConverterParameter=not}" />
+                            <StackPanel Visibility="{Binding HasWar, Converter={StaticResource Vis}}">
+                                <TextBlock Style="{StaticResource Strong}" FontSize="15" Foreground="{DynamicResource AccentBrush}" Text="{Binding WarState}" />
+                                <TextBlock Style="{StaticResource Big}" FontSize="28" Margin="0,2,0,0" Text="{Binding WarCountdown}"
+                                           Visibility="{Binding WarCountdown, Converter={StaticResource Vis}}" />
+                                <Grid Margin="0,16,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <Border Style="{StaticResource Card}" Padding="12,10" Background="{DynamicResource AccentSoftBrush}" BorderThickness="0">
+                                        <StackPanel>
+                                            <TextBlock Style="{StaticResource Strong}" FontSize="14" Text="{Binding OurClan}" />
+                                            <TextBlock Style="{StaticResource Subtle}" Margin="0,4,0,0" Text="{Binding OurScore}" />
+                                        </StackPanel>
+                                    </Border>
+                                    <TextBlock Grid.Column="1" Style="{StaticResource Muted}" Margin="12,0" VerticalAlignment="Center" FontWeight="SemiBold" Text="VS" />
+                                    <Border Grid.Column="2" Style="{StaticResource Card}" Padding="12,10">
+                                        <StackPanel>
+                                            <TextBlock Style="{StaticResource Strong}" FontSize="14" HorizontalAlignment="Right" Text="{Binding TheirClan}" />
+                                            <TextBlock Style="{StaticResource Subtle}" Margin="0,4,0,0" HorizontalAlignment="Right" Text="{Binding TheirScore}" />
+                                        </StackPanel>
+                                    </Border>
+                                </Grid>
+                                <Border Margin="0,14,0,0" Padding="12,8" CornerRadius="8">
+                                    <Border.Style>
+                                        <Style TargetType="Border">
+                                            <Setter Property="Background" Value="{StaticResource CardBrush}" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding AttacksLeft}" Value="True">
+                                                    <Setter Property="Background" Value="#33FF4D5E" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Border.Style>
+                                    <TextBlock Text="{Binding AttacksText}">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock" BasedOn="{StaticResource Strong}">
+                                                <Setter Property="Foreground" Value="{StaticResource SubtleTextBrush}" />
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding AttacksLeft}" Value="True">
+                                                        <Setter Property="Foreground" Value="#FF8A95" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
+                                </Border>
+                            </StackPanel>
+                            <TextBlock Style="{StaticResource Subtle}" Margin="0,10,0,0" TextWrapping="Wrap" Text="{Binding WarNote}" Visibility="{Binding WarNote, Converter={StaticResource Vis}}" />
+                        </StackPanel>
+                    </Border>
+                    <!-- the Builder Base has no war; achievements take its place -->
+                    <ContentControl Grid.Row="1" Margin="0,12,0,0" Focusable="False" Content="{Binding}" ContentTemplate="{StaticResource AchievementsCard}"
+                                    Visibility="{Binding IsHome, Converter={StaticResource Vis}, ConverterParameter=not}" />
+                </Grid>
+
+                <!-- raid, Gold Pass, achievements -->
+                <Grid Grid.Column="4">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+                    <Border Style="{StaticResource Card}" Margin="0,0,0,12" Padding="16,12" Visibility="{Binding HasRaid, Converter={StaticResource Vis}}">
+                        <StackPanel>
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                <Image Width="20" Height="20" Margin="0,0,8,0" VerticalAlignment="Center" Source="{Binding RaidIcon}" RenderOptions.BitmapScalingMode="HighQuality"
+                                       Visibility="{Binding RaidIcon, Converter={StaticResource Vis}}" />
+                                <TextBlock Style="{StaticResource CardTitle}" Margin="0" VerticalAlignment="Center" Text="{Binding RaidTitle}" />
+                            </StackPanel>
+                            <TextBlock Style="{StaticResource Strong}" FontSize="15" Text="{Binding RaidCountdown}" />
+                            <TextBlock Style="{StaticResource Subtle}" Margin="0,4,0,0" Text="{Binding RaidAttacks}" />
+                            <TextBlock Style="{StaticResource Subtle}" Margin="0,2,0,0" Text="{Binding RaidLoot}" Visibility="{Binding RaidLoot, Converter={StaticResource Vis}}" />
+                            <TextBlock Style="{StaticResource Muted}" Margin="0,4,0,0" TextWrapping="Wrap" Text="{Binding RaidClan}" />
+                        </StackPanel>
+                    </Border>
+                    <Border Grid.Row="1" Style="{StaticResource Card}" Margin="0,0,0,12" Padding="16,10" Visibility="{Binding GoldPassText, Converter={StaticResource Vis}}">
+                        <StackPanel Orientation="Horizontal">
+                            <Image Width="26" Height="26" Margin="0,0,10,0" VerticalAlignment="Center" Source="{Binding GoldPassIcon}" RenderOptions.BitmapScalingMode="HighQuality"
+                                   Visibility="{Binding GoldPassIcon, Converter={StaticResource Vis}}" />
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Style="{StaticResource Muted}" FontWeight="SemiBold" Text="GOLD PASS" />
+                                <TextBlock Style="{StaticResource Strong}" Margin="0,2,0,0" Foreground="{StaticResource GoldBrush}" Text="{Binding GoldPassText}" />
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+                    <ContentControl Grid.Row="2" Focusable="False" Content="{Binding}" ContentTemplate="{StaticResource AchievementsCard}"
+                                    Visibility="{Binding IsHome, Converter={StaticResource Vis}}" />
+                </Grid>
+            </Grid>
+        </Grid>
     </DataTemplate>
 </ResourceDictionary>

@@ -2,9 +2,11 @@ using System.Collections.ObjectModel;
 using System.Windows.Media;
 using System.Windows.Threading;
 using ClashOverlay.App.Services;
+using ClashOverlay.Core.Calc;
 using ClashOverlay.Core.Data;
 using ClashOverlay.Core.Display;
 using ClashOverlay.Core.Settings;
+using ClashOverlay.Core.State;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.Logging;
@@ -48,7 +50,9 @@ internal sealed partial class OverlayViewModel : ObservableObject
     private readonly ILogger _log;
     private readonly DispatcherTimer _refresh;
     private readonly DispatcherTimer _clock;
+    private readonly Dictionary<string, int> _selection = new();
     private CancellationTokenSource? _loading;
+    private (string Tag, ProfileData Data)? _profile;
 
     public OverlayViewModel(AppHost host)
     {
@@ -203,6 +207,65 @@ internal sealed partial class OverlayViewModel : ObservableObject
 
     [RelayCommand]
     private Task Refresh() => LoadAsync(force: true);
+
+    /// <summary>"+1": marks <paramref name="count"/> copies of <paramref name="item"/> at <paramref name="fromLevel"/> as upgraded.</summary>
+    public async Task RaiseAsync(ItemDef item, int fromLevel, int count)
+    {
+        if (SelectedAccount is not { } account || LevelEdits.Raise(item, fromLevel, count, _host.Time.GetUtcNow()) is not { } edit)
+        {
+            return;
+        }
+
+        var edits = _host.Store.LoadEdits(account.Tag).Append(edit).ToList();
+        _host.Store.SaveEdits(account.Tag, edits);
+        _log.LogInformation("Hand edit for {Tag}: {Item} {From} -> {To} x{Count}", account.Tag, item.Name, edit.FromLevel, edit.ToLevel, edit.Count);
+        await LoadAsync(force: false);
+    }
+
+    /// <summary>Takes back the latest hand edit of <paramref name="item"/>.</summary>
+    public async Task UndoAsync(ItemDef item)
+    {
+        if (SelectedAccount is not { } account)
+        {
+            return;
+        }
+
+        _host.Store.SaveEdits(account.Tag, LevelEdits.UndoLast(_host.Store.LoadEdits(account.Tag), item.Id));
+        await LoadAsync(force: false);
+    }
+
+    /// <summary>
+    /// Takes back the latest hand edit in the shown village. Reaches items an edit took to max level, whose rows are
+    /// gone from the upgrade lists.
+    /// </summary>
+    public async Task UndoLatestAsync()
+    {
+        if (SelectedAccount is not { } account || _host.Data.Data is not { } game)
+        {
+            return;
+        }
+
+        var edits = _host.Store.LoadEdits(account.Tag);
+        if (edits.Where(e => game.Get(e.ItemId)?.Village == Village).MaxBy(e => e.At) is { } last)
+        {
+            _host.Store.SaveEdits(account.Tag, LevelEdits.UndoLast(edits, last.ItemId));
+            await LoadAsync(force: false);
+        }
+    }
+
+    public void SetProgressMode(ProgressMode mode)
+    {
+        if (_host.Settings.ProgressMode != mode)
+        {
+            _host.Settings.ProgressMode = mode;
+            _host.SaveSettings();
+        }
+    }
+
+    /// <summary>The row last selected in a tab, kept across reloads (e.g. after "+1").</summary>
+    public int RememberedSelection(string tabKey) => _selection.GetValueOrDefault($"{Village}/{tabKey}", -1);
+
+    public void RememberSelection(string tabKey, int itemId) => _selection[$"{Village}/{tabKey}"] = itemId;
 
     partial void OnVillageChanged(Village value)
     {
@@ -359,6 +422,7 @@ internal sealed partial class OverlayViewModel : ObservableObject
         var profile = await _host.Loader.LoadProfileAsync(player, force, ct);
         if (!ct.IsCancellationRequested && Data == data)
         {
+            _profile = (data.Account.Tag, profile);
             foreach (var tab in Tabs)
             {
                 tab.OnProfile(profile);
@@ -442,6 +506,12 @@ internal sealed partial class OverlayViewModel : ObservableObject
         Tabs.Clear();
         foreach (var tab in TabFactory.Create(this, Data, Village))
         {
+            // Clan and war data from the last load, until the next one arrives.
+            if (_profile is { } p && p.Tag == Data?.Account.Tag)
+            {
+                tab.OnProfile(p.Data);
+            }
+
             Tabs.Add(tab);
         }
 

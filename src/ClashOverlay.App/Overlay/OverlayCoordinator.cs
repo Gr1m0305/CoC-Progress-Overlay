@@ -52,7 +52,11 @@ internal sealed class OverlayCoordinator : IDisposable
             }
         };
         _hotkeys.Pressed += OnHotkey;
-        _vm.CloseRequested += (_, _) => Hide();
+        _vm.CloseRequested += (_, _) =>
+        {
+            _log.LogDebug("Close button");
+            Hide();
+        };
         _host.SettingsChanged += (_, _) =>
         {
             UpdateHotkeys();
@@ -146,6 +150,7 @@ internal sealed class OverlayCoordinator : IDisposable
 
     private void OnHotkey(HotkeyAction action)
     {
+        _log.LogDebug("Hotkey {Action}", action);
         switch (action)
         {
             case HotkeyAction.Toggle:
